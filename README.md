@@ -7,6 +7,6 @@ O sistema deve registar a hora que o aluno fez o chamado e mostrar em uma interf
 - Aluno
 
 # Casos de uso
-Todos: Logar/deslogar do sistema; Manter os dados cadastrais
-Professor: Manter (inserir, mostrar, editar, remover) todos chamados
-Aluno: Manter (inserir, mostrar, editar, remover) seus chamados
+- Todos: Logar/deslogar do sistema; Manter os dados cadastrais
+- Professor: Manter (inserir, mostrar, editar, remover) todos chamados
+- Aluno: Manter (inserir, mostrar, editar, remover) seus chamados
