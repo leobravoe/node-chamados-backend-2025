@@ -3,8 +3,8 @@ Quero fazer um sistema de atendimento em sala de aula. Nesse sistema o aluno pod
 O sistema deve registar a hora que o aluno fez o chamado e mostrar em uma interface essas chamadas em ordem. É interessante também mostrar quanto tempo faz que o aluno fez o chamado.
 
 # Atores
-## Professor
-## Aluno
+- Professor
+- Aluno
 
 # Casos de uso
 Todos: Logar/deslogar do sistema; Manter os dados cadastrais
