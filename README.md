@@ -19,6 +19,7 @@ O sistema deve registar a hora que o aluno fez o chamado e mostrar em uma interf
 | id               |
 | Usuario_id       |
 | texto            |
+| estado           |
 | dataCriacao      |
 | dataAtualizacao  |
 
@@ -26,9 +27,11 @@ O sistema deve registar a hora que o aluno fez o chamado e mostrar em uma interf
 
 | Campo            |
 |------------------|
+| id               |
 | nome             |
 | email            |
 | senha            |
+| papel            |
 | dataCriacao      |
 | dataAtualizacao  |
 
