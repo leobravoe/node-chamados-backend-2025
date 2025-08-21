@@ -6,9 +6,9 @@
      EXEMPLO: Em aulas práticas, alunos esperam muito para serem atendidos.
      Há filas confusas e frustração. O professor não vê ordem nem tempo de espera.
      Objetivo inicial: organizar a fila para reduzir a espera e garantir justiça. -->
-[Quem], em [contexto], tem dificuldade em [tarefa/dor].
-Isso causa [efeito mensurável].
-No início, o foco será [público principal] com o objetivo de [resultado simples].
+Em aulas práticas, alunos esperam muito para serem atendidos.
+Há filas confusas e frustração. O professor não vê ordem nem tempo de espera.
+Objetivo inicial: organizar a fila para reduzir a espera e garantir justiça
 
 ## 2) Atores e Decisores (quem usa / quem decide)
 <!-- Liste papéis (não nomes).
