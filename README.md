@@ -25,7 +25,7 @@
      Todos: Logar/deslogar do sistema; Manter dados cadastrais
      Professor: Manter (inserir, mostrar, editar, remover) todos os chamados
      Aluno: Manter (inserir, mostrar, editar, remover) seus chamados -->
-- Visitantes: Criar usuários e logar no sistema;
+- Visitantes: Criar usuário e logar no sistema;
 - Aluno/Professor: deslogar do sistema; Manter dados cadastrais
 - Professor: Manter (inserir, mostrar, editar, remover) todos os chamados
 - Aluno: Manter (inserir, mostrar, editar, remover) seus chamados
