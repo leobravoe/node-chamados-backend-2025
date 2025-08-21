@@ -15,8 +15,8 @@
      EXEMPLO:
      Usuários principais: Alunos da turma de Desenvolvimento Web
      Decisores/Apoiadores: Professores da disciplina; Coordenação do curso -->
-Usuários principais: [lista]
-Decisores/Apoiadores: [lista]
+- Atores: Alunos e Professores
+- Decisores/Apoiadores: Professores da disciplina; Coordenação do curso
 
 ## 3) Casos de uso (de forma simples)
 <!-- Formato "Ator: ações que pode fazer".
