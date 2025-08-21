@@ -27,8 +27,8 @@
      Aluno: Manter (inserir, mostrar, editar, remover) seus chamados -->
 - Visitantes: Criar usuário e logar no sistema;
 - Aluno/Professor: deslogar do sistema; Manter dados cadastrais
-- Professor: Manter (inserir, mostrar, editar, remover) todos os chamados
-- Aluno: Manter (inserir, mostrar, editar, remover) seus chamados
+- Professor: Manter (listar, mostrar, inserir, editar, remover) todos os chamados
+- Aluno: Manter (listar, mostrar, inserir, editar, remover) seus chamados
 
 ## 4) Limites e suposições
 <!-- Simples assim:
@@ -67,14 +67,16 @@
      EXEMPLO de 1ª fatia:
      Inclui login simples, criar chamado, listar em ordem.
      Critérios de aceite (objetivos): criar → aparece na lista com horário; encerrar → some ou marca "fechado". -->
-**Fluxo principal (curto):**  
-1) [entrada do usuário] → 2) [processo] → 3) [salvar algo] → 4) [mostrar resultado]
+**Fluxo principal**  
+1) Aluno faz login
+2) Clica em "Criar chamado" e descreve a dúvida
+3) Sistema salva e coloca na fila
+4) Lista mostra ordem e tempo desde criação
+5) Professor encerra o chamado
 
-**Primeira fatia vertical (escopo mínimo):**  
-Inclui: [uma tela], [uma ação principal], [salvar], [mostrar algo]  
-Critérios de aceite:
-- [Condição 1 bem objetiva]
-- [Condição 2 bem objetiva]
+**Primeira fatia vertical**  
+- Inclui login simples, criar chamado, listar em ordem.
+- Critérios de aceite: criar → aparece na lista com horário; encerrar → some ou marca "fechado".
 
 ## 7) Esboços de algumas telas (wireframes)
 <!-- Vale desenho no papel (foto), Figma, Excalidraw, etc. Não precisa ser bonito, precisa ser claro.
@@ -91,18 +93,18 @@ Critérios de aceite:
 <!-- Liste apenas o que você REALMENTE pretende usar agora. -->
 
 ### 8.1 Navegador
-**Navegador:** [HTML/CSS/JS | React/Vue/Bootstrap/etc., se houver]  
-**Armazenamento local (se usar):** [LocalStorage/IndexedDB/—]  
-**Hospedagem:** [GitHub Pages/—]
+**Navegador:** HTML/CSS/JS/Bootstrap  
+**Armazenamento local:**   
+**Hospedagem:** Github Pages
 
 ### 8.2 Front-end (servidor de aplicação, se existir)
-**Front-end (servidor):** [ex.: Next.js/React/—]  
-**Hospedagem:** [ex.: Vercel/—]
+**Front-end:** React  
+**Hospedagem:** Github Pages
 
 ### 8.3 Back-end (API/servidor, se existir)
-**Back-end (API):** [ex.: FastAPI/Express/PHP/Laravel/Spring/—]  
-**Banco de dados:** [ex.: SQLite/Postgres/MySQL/MongoDB/—]  
-**Deploy do back-end:** [ex.: Render/Railway/—]
+**Back-end (API):** JavaScript com Express 
+**Banco de dados:** MySQL ou Postgres
+**Deploy do back-end:** Estudar onde irei fazer.
 
 ## 9) Plano de Dados (Dia 0) — somente itens 1–3
 <!-- Defina só o essencial para criar o banco depois. -->
