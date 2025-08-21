@@ -15,7 +15,7 @@
      EXEMPLO:
      Usuários principais: Alunos da turma de Desenvolvimento Web
      Decisores/Apoiadores: Professores da disciplina; Coordenação do curso -->
-- Atores: Alunos e Professores
+- Atores: Visitantes, Alunos e Professores
 - Decisores/Apoiadores: Professores; Coordenação do curso
 
 ## 3) Casos de uso (de forma simples)
@@ -25,7 +25,8 @@
      Todos: Logar/deslogar do sistema; Manter dados cadastrais
      Professor: Manter (inserir, mostrar, editar, remover) todos os chamados
      Aluno: Manter (inserir, mostrar, editar, remover) seus chamados -->
-- Todos: Logar/deslogar do sistema; Manter dados cadastrais
+- Visitantes: Criar usuários e logar no sistema;
+- Aluno/Professor: deslogar do sistema; Manter dados cadastrais
 - Professor: Manter (inserir, mostrar, editar, remover) todos os chamados
 - Aluno: Manter (inserir, mostrar, editar, remover) seus chamados
 
@@ -59,7 +60,7 @@
 <!-- Pense “Entrada → Processo → Saída”.
      EXEMPLO de Fluxo:
      1) Aluno faz login
-     2) Clica em "Pedir ajuda" e descreve a dúvida
+     2) Clica em "Criar chamado" e descreve a dúvida
      3) Sistema salva e coloca na fila
      4) Lista mostra ordem e tempo desde criação
      5) Professor encerra o chamado
