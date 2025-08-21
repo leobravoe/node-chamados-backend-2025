@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "description": "<!-- Escreva o problema sem falar de telas/tecnologias.\r      Responda: Quem sofre? Onde? O que atrapalha? Por que isso importa?\r      EXEMPLO: Em aulas práticas, alunos esperam muito para serem atendidos.\r      Há filas confusas e frustração. O professor não vê ordem nem tempo de espera.\r      Objetivo inicial: organizar a fila para reduzir a espera e garantir justiça. -->\r - Em aulas práticas, alunos esperam muito para serem atendidos.\r - Há filas confusas e frustração. O professor não vê ordem nem tempo de espera.\r - Objetivo inicial: organizar a fila para reduzir a espera e garantir justiça",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js"
   },
   "repository": {
     "type": "git",
@@ -18,5 +20,8 @@
   "homepage": "https://github.com/leobravoe/desenvovimento-web-2025#readme",
   "dependencies": {
     "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }
