@@ -1,5 +1,4 @@
-# [Título do seu projeto]
-AtendeAí — Fila de Ajuda em Sala
+# AtendeAí — Fila de Ajuda em Sala
 
 ## 1) Problema
 <!-- Escreva o problema sem falar de telas/tecnologias.
