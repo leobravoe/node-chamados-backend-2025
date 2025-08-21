@@ -38,9 +38,9 @@
      Limites: entrega final até o fim da disciplina (ex.: 2025-11-30); rodar no navegador; sem serviços pagos.
      Suposições: internet no laboratório; navegador atualizado; acesso ao GitHub; 10 min para teste rápido.
      Plano B: sem internet → rodar local e salvar em arquivo/LocalStorage; sem tempo do professor → testar com 3 colegas. -->
-Limites: [prazo final], [regras/tecnologias obrigatórias], [restrições]  
-Suposições: [internet/navegador/GitHub/tempo de teste]  
-Plano B: [como continua entregando a 1ª fatia se algo falhar]
+- Limites: entrega final até o fim da disciplina (ex.: 2025-11-30); rodar no navegador; sem serviços pagos.
+- Suposições: internet no laboratório; navegador atualizado; acesso ao GitHub; 10 min para teste rápido.
+- Plano B: sem internet → rodar local e salvar em arquivo/LocalStorage; sem tempo do professor → testar com 3 colegas.
 
 ## 5) Hipóteses + validação
 <!-- Preencha as duas frases abaixo. Simples e direto.
@@ -49,11 +49,11 @@ Plano B: [como continua entregando a 1ª fatia se algo falhar]
      EXEMPLO Viabilidade: Com app no navegador (HTML/CSS/JS + armazenamento local),
      criar e listar chamados responde em até 1 segundo na maioria das vezes (ex.: 9 de cada 10).
      Validação: medir no protótipo com 30 ações; meta: pelo menos 27 de 30 ações (9/10) em 1s ou menos. -->
-H-Valor: Se [X], então [Y] melhora em [critério].  
-Validação (valor): [teste rápido/observação]; alvo: [meta simples].
+- EXEMPLO Valor: Se o aluno ver sua posição na fila, sente mais controle e conclui melhor a atividade.
+- Validação: teste com 5 alunos; sucesso se ≥4 abrem/fecham chamado sem ajuda.
 
-H-Viabilidade: Com [tecnologia], [ação/tela] leva até [n] s.  
-Validação (viabilidade): [medição no protótipo]; meta: [n] s ou menos na maioria das vezes (ex.: 9/10).
+- EXEMPLO Viabilidade: Com app no navegador (HTML/CSS/JS + armazenamento local), criar e listar chamados responde em até 1 segundo na maioria das vezes (ex.: 9 de cada 10).
+- Validação: medir no protótipo com 30 ações; meta: pelo menos 27 de 30 ações (9/10) em 1s ou menos.
 
 ## 6) Fluxo principal e primeira fatia
 <!-- Pense “Entrada → Processo → Saída”.
