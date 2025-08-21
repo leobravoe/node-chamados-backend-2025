@@ -16,7 +16,7 @@
      Usuários principais: Alunos da turma de Desenvolvimento Web
      Decisores/Apoiadores: Professores da disciplina; Coordenação do curso -->
 - Atores: Alunos e Professores
-- Decisores/Apoiadores: Professores da disciplina; Coordenação do curso
+- Decisores/Apoiadores: Professores; Coordenação do curso
 
 ## 3) Casos de uso (de forma simples)
 <!-- Formato "Ator: ações que pode fazer".
