@@ -25,9 +25,9 @@
      Todos: Logar/deslogar do sistema; Manter dados cadastrais
      Professor: Manter (inserir, mostrar, editar, remover) todos os chamados
      Aluno: Manter (inserir, mostrar, editar, remover) seus chamados -->
-Todos: [ações comuns, ex.: Logar/deslogar; Manter dados cadastrais]  
-[Ator 1]: [ações do ator 1]  
-[Ator 2]: [ações do ator 2]
+- Todos: Logar/deslogar do sistema; Manter dados cadastrais
+- Professor: Manter (inserir, mostrar, editar, remover) todos os chamados
+- Aluno: Manter (inserir, mostrar, editar, remover) seus chamados
 
 ## 4) Limites e suposições
 <!-- Simples assim:
