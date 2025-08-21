@@ -51,10 +51,10 @@
      criar e listar chamados responde em até 1 segundo na maioria das vezes (ex.: 9 de cada 10).
      Validação: medir no protótipo com 30 ações; meta: pelo menos 27 de 30 ações (9/10) em 1s ou menos. -->
 - Valor: Se o aluno ver sua posição na fila, sente mais controle e conclui melhor a atividade.
--- Validação: teste com 5 alunos; sucesso se ≥4 abrem/fecham chamado sem ajuda.
+    - Validação: teste com 5 alunos; sucesso se ≥4 abrem/fecham chamado sem ajuda.
 
 - Viabilidade: Com app no navegador (HTML/CSS/JS + armazenamento local), criar e listar chamados responde em até 1 segundo na maioria das vezes (ex.: 9 de cada 10).
--- Validação: medir no protótipo com 30 ações; meta: pelo menos 27 de 30 ações (9/10) em 1s ou menos.
+    - Validação: medir no protótipo com 30 ações; meta: pelo menos 27 de 30 ações (9/10) em 1s ou menos.
 
 ## 6) Fluxo principal e primeira fatia
 <!-- Pense “Entrada → Processo → Saída”.
