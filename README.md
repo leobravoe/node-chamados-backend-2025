@@ -68,11 +68,13 @@
      Inclui login simples, criar chamado, listar em ordem.
      Critérios de aceite (objetivos): criar → aparece na lista com horário; encerrar → some ou marca "fechado". -->
 **Fluxo principal**  
+0) Aluno cria a conta
 1) Aluno faz login
-2) Clica em "Criar chamado" e descreve a dúvida
-3) Sistema salva e coloca na fila
-4) Lista mostra ordem e tempo desde criação
-5) Professor encerra o chamado
+2) Aluno clica em "Criar chamado" e descreve a dúvida
+3) Aluno salva o chamado e coloca na fila de espera
+4) Aluno mostra a lista ordenada por tempo de criação
+5) Professor faz login
+6) Professor encerra o chamado
 
 **Primeira fatia vertical**  
 - Inclui login simples, criar chamado, listar em ordem.
@@ -135,7 +137,7 @@
 | Campo           | Tipo               | Obrigatório | Exemplo                 |
 |-----------------|--------------------|-------------|-------------------------|
 | id              | número             | sim         | 2                       |
-| Usuario_id      | número (fk)        | sim         | 8f3a-...                |
+| Usuario_id      | número (fk)        | sim         | 1                       |
 | texto           | texto              | sim         | "Erro ao compilar"      |
 | estado          | char               | sim         | 'a' \| 'f'              |
 | dataCriacao     | data/hora          | sim         | 2025-08-20 14:35        |
