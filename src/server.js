@@ -1,40 +1,24 @@
+// server.js
 import express from "express";
+import { pool } from "./db.js";
 
 const app = express();
 app.use(express.json());
 
-// rota de saúde
-app.get("/health", (req, res) => res.json({ ok: true }));
-
-// mini-API de tarefas em memória (sem banco ainda)
-const tasks = []; // [{id, title, done}]
-let nextId = 1;
-
-app.get("/tasks", (req, res) => res.json(tasks));
-
-app.post("/tasks", (req, res) => {
-    const { title } = req.body;
-    if (!title) return res.status(400).json({ error: "title é obrigatório" });
-    const task = { id: nextId++, title, done: false };
-    tasks.push(task);
-    res.status(201).json(task);
+// listar produtos
+app.get("/produtos", async (req, res) => {
+  const result = await pool.query("SELECT * FROM produtos ORDER BY id DESC");
+  res.json(result.rows);
 });
 
-app.patch("/tasks/:id", (req, res) => {
-    const id = Number(req.params.id);
-    const task = tasks.find(t => t.id === id);
-    if (!task) return res.status(404).json({ error: "não encontrada" });
-    if (typeof req.body.done === "boolean") task.done = req.body.done;
-    if (typeof req.body.title === "string") task.title = req.body.title;
-    res.json(task);
-});
-
-app.delete("/tasks/:id", (req, res) => {
-    const id = Number(req.params.id);
-    const i = tasks.findIndex(t => t.id === id);
-    if (i === -1) return res.status(404).json({ error: "não encontrada" });
-    tasks.splice(i, 1);
-    res.status(204).send();
+// criar produto
+app.post("/produtos", async (req, res) => {
+  const { nome, preco } = req.body;
+  const result = await pool.query(
+    "INSERT INTO produtos (nome, preco) VALUES ($1, $2) RETURNING *",
+    [nome, preco]
+  );
+  res.json(result.rows[0]);
 });
 
 const PORT = process.env.PORT || 3000;
