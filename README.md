@@ -228,5 +228,5 @@ CREATE TABLE Chamados (
 INSERT INTO Usuarios (nome, email, senha_hash, papel) VALUES('Usuário', 'user@user.com.br', '123', 0);
 INSERT INTO Usuarios (nome, email, senha_hash, papel) VALUES('Admin', 'admin@admin.com.br', '123', 1);
 
-INSERT INTO Chamados (usuario_id, texto, estado) VALUES(1, 'Preciso de ajuda com JS', 'a');
+INSERT INTO Chamados (Usuarios_id, texto, estado) VALUES(1, 'Preciso de ajuda com JS', 'a');
 ```
