@@ -122,7 +122,7 @@
 ### 9.2 Campos por entidade
 <!-- Use tipos simples: uuid, texto, número, data/hora, booleano, char. -->
 
-### Usuario
+### Usuarios
 | Campo           | Tipo                          | Obrigatório | Exemplo            |
 |-----------------|-------------------------------|-------------|--------------------|
 | id              | número                        | sim         | 1                  |
@@ -133,13 +133,65 @@
 | dataCriacao     | data/hora                     | sim         | 2025-08-20 14:30   |
 | dataAtualizacao | data/hora                     | sim         | 2025-08-20 15:10   |
 
-### Chamado
+### Chamados
 | Campo           | Tipo               | Obrigatório | Exemplo                 |
 |-----------------|--------------------|-------------|-------------------------|
 | id              | número             | sim         | 2                       |
-| Usuario_id      | número (fk)        | sim         | 1                       |
+| Usuarios_id     | número (fk)        | sim         | 1                       |
 | texto           | texto              | sim         | "Erro ao compilar"      |
 | estado          | char               | sim         | 'a' \| 'f'              |
+| urlImagem       | texto              | não         | '/img/ícone.png'        |     
+| dataCriacao     | data/hora          | sim         | 2025-08-20 14:35        |
+| dataAtualizacao | data/hora          | sim         | 2025-08-20 14:50        |
+
+### Arquivos
+| Campo           | Tipo               | Obrigatório | Exemplo                 |
+|-----------------|--------------------|-------------|-------------------------|
+| id              | número             | sim         | 2                       |
+| Usuarios_id     | número (fk)        | sim         | 1                       |
+| nome            | texto              | sim         | "index.html"            |
+| tipo            | texto              | sim         | "html"                  |
+| caminho         | texto              | sim         | '/Usuario_1/index.html' |     
+| dataCriacao     | data/hora          | sim         | 2025-08-20 14:35        |
+| dataAtualizacao | data/hora          | sim         | 2025-08-20 14:50        |
+
+
+### Discos
+| Campo           | Tipo               | Obrigatório | Exemplo                 |
+|-----------------|--------------------|-------------|-------------------------|
+| id              | número             | sim         | 2                       |
+| Usuarios_id     | número (fk)        | sim         | 1                       |
+| artista         | texto              | sim         | "Fulano"                |
+| gênero          | texto              | sim         | "Sapecada"              |
+| álbum           | texto              | sim         | 'Gaúcho Raiz'           |     
+| preço           | numérico           | sim         | 50.50                   |     
+| urlImagem       | texto              | sim         | '/Usuario_1/capa.png'   |     
+| descrição       | texto              | sim         | '.....'                 |     
+| faixas          | texto              | sim         | '1 - ...; 2 - ...'      |     
+| dataCriacao     | data/hora          | sim         | 2025-08-20 14:35        |
+| dataAtualizacao | data/hora          | sim         | 2025-08-20 14:50        |
+
+### Encomendas
+| Campo           | Tipo               | Obrigatório | Exemplo                 |
+|-----------------|--------------------|-------------|-------------------------|
+| id              | número             | sim         | 2                       |
+| Usuarios_id     | número (fk)        | sim         | 1                       |
+| material        | texto              | sim         | "Couro"                 |
+| chumbo          | inteiro            | sim         | 5                       |
+| pesoLaco        | numérico           | sim         | 700.5                   |     
+| cor             | texto              | sim         | "Azul"                  |     
+| dataCriacao     | data/hora          | sim         | 2025-08-20 14:35        |
+| dataAtualizacao | data/hora          | sim         | 2025-08-20 14:50        |
+
+### Artes
+| Campo           | Tipo               | Obrigatório | Exemplo                 |
+|-----------------|--------------------|-------------|-------------------------|
+| id              | número             | sim         | 2                       |
+| Usuarios_id     | número (fk)        | sim         | 1                       |
+| urlImagem       | texto              | sim         | "/Usuario_1/image1.png" |
+| nome            | texto              | sim         | "Fulano"                |
+| descrição       | texto              | sim         | "Imagem muito legal"    |     
+| palavrasChave   | texto              | sim         | "Pixel Art; Anatomia;"  |     
 | dataCriacao     | data/hora          | sim         | 2025-08-20 14:35        |
 | dataAtualizacao | data/hora          | sim         | 2025-08-20 14:50        |
 
@@ -149,3 +201,32 @@
      Um Chamado pertence a um Usuario (N→1). -->
 - Um [A] tem muitos [B]. (1→N)
 - Um [B] pertence a um [A]. (N→1)
+
+### 9.4 Modelagem do banco de dados no POSTGRES
+
+```sql
+CREATE TABLE Usuarios (
+  id                SERIAL       NOT NULL PRIMARY KEY,
+  nome              VARCHAR(255) NOT NULL,
+  email             VARCHAR(255) NOT NULL UNIQUE,
+  senha_hash        VARCHAR(255) NOT NULL,
+  papel             SMALLINT     NOT NULL CHECK (papel IN (0,1)),  -- 0=aluno, 1=professor
+  data_criacao      TIMESTAMP    DEFAULT now(),
+  data_atualizacao  TIMESTAMP    DEFAULT now()
+);
+
+CREATE TABLE Chamados (
+  id                SERIAL       NOT NULL PRIMARY KEY,
+  Usuarios_id       BIGINT       NOT NULL REFERENCES Usuarios(id),
+  texto             VARCHAR(255) NOT NULL,
+  estado            CHAR(1)      NOT NULL CHECK (estado IN ('a','f')), -- a=aberto, f=fechado
+  urlImagem         VARCHAR(255),
+  data_criacao      TIMESTAMP    DEFAULT now(),
+  data_atualizacao  TIMESTAMP    DEFAULT now()
+);
+
+INSERT INTO Usuarios (nome, email, senha_hash, papel) VALUES('Usuário', 'user@user.com.br', '123', 0);
+INSERT INTO Usuarios (nome, email, senha_hash, papel) VALUES('Admin', 'admin@admin.com.br', '123', 1);
+
+INSERT INTO Chamados (usuario_id, texto, estado) VALUES(1, 'Preciso de ajuda com JS', 'a');
+```
