@@ -115,9 +115,8 @@
 <!-- EXEMPLO:
      - Usuario — pessoa que usa o sistema (aluno/professor)
      - Chamado — pedido de ajuda criado por um usuário -->
-- [Entidade 1] — [o que representa em 1 linha]
-- [Entidade 2] — [...]
-- [Entidade 3] — [...]
+- Usuario — pessoa que usa o sistema (aluno/professor), autentica-se e pode abrir/gerenciar chamados.
+- Chamado — solicitação de ajuda criada por um usuário, com descrição do problema, estado (aberto/fechado) e metadados; pertence a um Usuario via Usuarios_id
 
 ### 9.2 Campos por entidade
 <!-- Use tipos simples: uuid, texto, número, data/hora, booleano, char. -->
@@ -199,8 +198,9 @@
 <!-- Frases simples bastam. EXEMPLO:
      Um Usuario tem muitos Chamados (1→N).
      Um Chamado pertence a um Usuario (N→1). -->
-- Um [A] tem muitos [B]. (1→N)
-- Um [B] pertence a um [A]. (N→1)
+- Um Usuario tem muitos Chamados. (1→N)
+- Um Chamado pertence a um Usuario. (N→1)
+-- (FK: Chamados.Usuarios_id → Usuarios.id)
 
 ### 9.4 Modelagem do banco de dados no POSTGRES
 
