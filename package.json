@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "reset-database": "node src/commands/reset-database.js"
   },
   "repository": {
     "type": "git",
