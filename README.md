@@ -128,19 +128,7 @@ Exemplos de telas: **Login**, **Lista de chamados**, **Novo chamado**, **Painel 
 ### 9.4 Modelagem do banco de dados no POSTGRES
 
 ```sql
-\echo '--- Resetando banco chamados_api_db ---'
-
-\encoding UTF8
-
 SET client_encoding = 'UTF8';
-
-\set ON_ERROR_STOP on
-
-DROP DATABASE IF EXISTS chamados_api_db;
-
-CREATE DATABASE chamados_api_db;
-
-\connect chamados_api_db
 
 CREATE TABLE IF NOT EXISTS Usuarios (
   id                SERIAL       PRIMARY KEY,
@@ -200,7 +188,6 @@ INSERT INTO Chamados (Usuarios_id, texto, estado, urlImagem) VALUES
 (4,  'Mensagem de validação pouco clara',             'a', '/img/validacao-msg.png'),
 (5,  'Dúvida sobre COALESCE no SQL',                  'a', '/img/sql-coalesce.png'),
 (6,  'Diferença entre 200 e 201 no retorno',          'f', '/img/http-status.png');
-\echo '--- Reset concluido com sucesso ---'
 ```
 
 > ✅ **Dica para iniciantes**: `SERIAL` cria um número automático (1, 2, 3…).  
