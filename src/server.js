@@ -33,10 +33,37 @@ const app = express();
 //   → req.body vira { Usuarios_id: 1, texto: "..." }.
 // -----------------------------------------------------------------------------
 app.use(express.json());
-
-// Definindo as rotas do arquivo externo
+// -----------------------------------------------------------------------------
+// ROTA DE BOAS-VINDAS (GET /)
+// - Retorna um “guia rápido” em JSON com os endpoints disponíveis da API.
+// - Útil para abrir no navegador e ter uma visão geral do que existe.
+// -----------------------------------------------------------------------------
+app.get("/", (_req, res) => {
+  res.json({
+    // CHAMADOS
+    LISTAR:     "GET /api/chamados",
+    MOSTRAR:    "GET /api/chamados/:id",
+    CRIAR:      "POST /api/chamados  BODY: { Usuarios_id: number, texto: 'string', estado?: 'a'|'f', urlImagem?: 'string' }",
+    SUBSTITUIR: "PUT /api/chamados/:id  BODY: { Usuarios_id: number, texto: 'string', estado: 'a'|'f', urlImagem?: 'string' }",
+    ATUALIZAR:  "PATCH /api/chamados/:id  BODY: { Usuarios_id?: number, texto?: 'string', estado?: 'a'|'f', urlImagem?: 'string' }",
+    DELETAR:    "DELETE /api/chamados/:id",
+  });
+});
+// -----------------------------------------------------------------------------
+// MONTAGEM DO ROUTER DE CHAMADOS EM /api/chamados
+// - chamadosRouter é um Router do Express definido em ./routes/chamados.routes.js.
+// - app.use("/api/chamados", chamadosRouter) diz ao Express:
+//     “Para qualquer caminho que COMEÇA com /api/chamados, use as rotas
+//      definidas dentro de chamadosRouter.”
+// - Isso adiciona o prefixo automaticamente, melhorando a organização:
+//     GET    /api/chamados
+//     GET    /api/chamados/:id
+//     POST   /api/chamados
+//     PUT    /api/chamados/:id
+//     PATCH  /api/chamados/:id
+//     DELETE /api/chamados/:id
+// -----------------------------------------------------------------------------
 app.use("/api/chamados", chamadosRouter);
-
 // -----------------------------------------------------------------------------
 // INICIANDO O SERVIDOR
 // - process.env.PORT permite definir a porta via ambiente (ex.: PORT=8080).
