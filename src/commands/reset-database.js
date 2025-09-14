@@ -1,81 +1,100 @@
 // src/commands/reset-database.js (ESM)
 'use strict';
+
 import { Client } from 'pg';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
+// --- 1. CONFIGURAÇÃO ---
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname  = path.dirname(__filename);
-
 const {
-  PGHOST = 'localhost',
-  PGPORT = '5432',
-  PGUSER = 'postgres',
-  PGPASSWORD = 'aluno',
-  PGDATABASE_ADMIN = 'postgres',       // DB administrativo
-  DB_DATABASE = 'chamados_api_db',     // DB alvo a recriar
-  DB_DATABASE_FILE_NAME = 'banco.sql', // fallback se não tiver o PATH no .env
-  DB_DATABASE_FILE_PATH: DB_DATABASE_FILE_PATH_ENV,
+    // Conexão principal com o banco
+    DB_HOST: dbHost,
+    DB_PORT: dbPort,
+    DB_USER: dbUser,
+    DB_PASSWORD: dbPassword,
+    DB_DATABASE: dbName,
+
+    // Conexão administrativa (para reset)
+    PG_DATABASE_ADMIN: dbAdminName = 'postgres', // Padrão 'postgres' para segurança
+    DB_DATABASE_ADMIN_PASSWORD: dbAdminPassword,
+
+    // Caminho do arquivo de Schema
+    DB_DATABASE_FILE_PATH: dbSchemaFilePath,
+
 } = process.env;
 
-// Se veio no .env, resolve relativo ao CWD (onde roda o `node`/`npm`).
-// Senão, usa ../database/banco.sql relativo a este arquivo.
-const DB_DATABASE_FILE_PATH = DB_DATABASE_FILE_PATH_ENV && DB_DATABASE_FILE_PATH_ENV.trim().length > 0
-  ? path.resolve(process.cwd(), DB_DATABASE_FILE_PATH_ENV)
-  : path.resolve(__dirname, '../database', DB_DATABASE_FILE_NAME);
+// Resolve o caminho do arquivo .sql
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const sqlFilePath = dbSchemaFilePath
+    ? path.resolve(process.cwd(), dbSchemaFilePath)
+    : path.resolve(__dirname, '../database', 'banco.sql');
 
-async function run() {
-  const admin = new Client({
-    host: PGHOST,
-    port: Number(PGPORT),
-    user: PGUSER,
-    password: PGPASSWORD,
-    database: PGDATABASE_ADMIN,
-  });
-  await admin.connect();
 
-  await admin.query(`
-    SELECT pg_terminate_backend(pid)
-    FROM pg_stat_activity
-    WHERE datname = $1 AND pid <> pg_backend_pid();
-  `, [DB_DATABASE]);
+// --- 2. LÓGICA PRINCIPAL ---
 
-  await admin.query(`DROP DATABASE IF EXISTS ${quoteIdent(DB_DATABASE)};`);
-  await admin.query(`CREATE DATABASE ${quoteIdent(DB_DATABASE)} WITH ENCODING 'UTF8' TEMPLATE template0;`);
+async function main() {
+    const baseConfig = {
+        host: dbHost,
+        port: Number(dbPort),
+        user: dbUser,
+    };
 
-  try {
-    const sql = await fs.readFile(DB_DATABASE_FILE_PATH, 'utf8');
-    const appClient = new Client({
-      host: PGHOST,
-      port: Number(PGPORT),
-      user: PGUSER,
-      password: PGPASSWORD,
-      database: DB_DATABASE,
-    });
-    await appClient.connect();
-    await appClient.query(sql);
-    await appClient.end();
-    console.log(`[OK] Schema aplicado: ${DB_DATABASE_FILE_PATH}`);
-  } catch (e) {
-    console.warn('[AVISO] Não foi possível aplicar o schema:', e.message, `\nArquivo: ${DB_DATABASE_FILE_PATH}`);
-  }
+    let adminClient, appClient;
 
-  await admin.end();
-  console.log(`[OK] Banco "${DB_DATABASE}" recriado.`);
+    try {
+        // ETAPA 1: Conectar como admin para apagar e recriar o banco
+        adminClient = new Client({
+            ...baseConfig,
+            database: dbAdminName,
+            password: dbAdminPassword || dbPassword, // Usa a senha de admin, se não, a padrão
+        });
+        await adminClient.connect();
+
+        console.log(`- Recriando o banco de dados "${dbName}"...`);
+        const safeDbName = adminClient.escapeIdentifier(dbName);
+
+        await adminClient.query(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1`, [dbName]);
+        await adminClient.query(`DROP DATABASE IF EXISTS ${safeDbName}`);
+        await adminClient.query(`CREATE DATABASE ${safeDbName}`);
+        console.log(`- Banco de dados recriado com sucesso.`);
+        await adminClient.end();
+
+        // ETAPA 2: Conectar ao novo banco para aplicar o schema
+        console.log(`- Aplicando schema do arquivo: ${sqlFilePath}`);
+        const sql = await fs.readFile(sqlFilePath, 'utf8');
+        appClient = new Client({ ...baseConfig, database: dbName, password: dbPassword });
+        await appClient.connect();
+        await appClient.query(sql);
+        console.log(`- Schema aplicado com sucesso.`);
+
+    } catch (error) {
+        // Trata o erro de arquivo não encontrado como um aviso, não um erro fatal
+        if (error.code === 'ENOENT') {
+            console.warn(`⚠️ AVISO: O banco foi recriado, mas o arquivo de schema não foi encontrado.`);
+            return; // Finaliza a execução com sucesso parcial
+        }
+        // Para outros erros, lança para o bloco de captura principal
+        throw error;
+    } finally {
+        // Garante que todas as conexões sejam fechadas, mesmo se ocorrer um erro
+        if (adminClient) await adminClient.end();
+        if (appClient) await appClient.end();
+    }
 }
 
-function quoteIdent(name) {
-  if (!/^[A-Za-z_][A-Za-z0-9_$]*$/.test(name)) {
-    return `"${String(name).replace(/"/g, '""')}"`;
-  }
-  return name;
-}
+// --- 3. EXECUÇÃO ---
 
-run().catch((err) => {
-  console.error('[ERRO] Reset falhou:', err);
-  process.exit(1);
-});
+(async () => {
+    try {
+        await main();
+        console.log('✅ Processo de reset finalizado com sucesso.');
+    } catch (error) {
+        console.error('❌ ERRO FATAL: Não foi possível resetar o banco de dados.');
+        console.error(error);
+        process.exit(1);
+    }
+})();
