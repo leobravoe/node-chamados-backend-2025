@@ -64,12 +64,12 @@ async function main() {
         await adminClient.end();
 
         // ETAPA 2: Conectar ao novo banco para aplicar o schema
-        console.log(`- Aplicando schema do arquivo: ${sqlFilePath}`);
+        console.log(`- Aplicando SQL do arquivo: ${sqlFilePath}`);
         const sql = await fs.readFile(sqlFilePath, 'utf8');
         appClient = new Client({ ...baseConfig, database: dbName, password: dbPassword });
         await appClient.connect();
         await appClient.query(sql);
-        console.log(`- Schema aplicado com sucesso.`);
+        console.log(`- SQL aplicado com sucesso.`);
 
     } catch (error) {
         // Trata o erro de arquivo não encontrado como um aviso, não um erro fatal
