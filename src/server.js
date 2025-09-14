@@ -21,7 +21,7 @@
 // -----------------------------------------------------------------------------
 import express from "express";
 import dotenv from "dotenv";
-import postsRouter from "./routes/post.routes.js";
+import chamadosRouter from "./routes/chamados.routes.js";
 dotenv.config();
 // ↑ Lê o arquivo .env (se existir) e popula process.env com as chaves definidas.
 //   Importante: chame dotenv.config() antes de acessar qualquer process.env.
@@ -35,7 +35,7 @@ const app = express();
 app.use(express.json());
 
 // Definindo as rotas do arquivo externo
-app.use("/api/posts", postsRouter);
+app.use("/api/chamados", chamadosRouter);
 
 // -----------------------------------------------------------------------------
 // INICIANDO O SERVIDOR
