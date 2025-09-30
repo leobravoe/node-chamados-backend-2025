@@ -249,30 +249,7 @@ router.delete("/:id", async (req, res) => {
         res.status(500).json({ erro: "erro interno" });
     }
 });
-// -----------------------------------------------------------------------------
-// (Opcional) ROTA DE AÇÃO: FECHAR CHAMADO — PATCH /api/chamados/:id/fechar
-// -----------------------------------------------------------------------------
-// Objetivo: atalho para mudar o estado para 'f' (fechado).
-router.patch("/:id/fechar", async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-        return res.status(400).json({ erro: "id inválido" });
-    }
-    try {
-        const { rows } = await pool.query(
-            `UPDATE chamados
-                SET estado = 'f',
-                    data_atualizacao = now()
-            WHERE id = $1
-            RETURNING *`,
-            [id]
-        );
-        if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
-        res.json(rows[0]);
-    } catch {
-        res.status(500).json({ erro: "erro interno" });
-    }
-});
+
 export default router;
 // -----------------------------------------------------------------------------
 // COMO "MONTAR" ESTE ROUTER NO APP PRINCIPAL (exemplo):
