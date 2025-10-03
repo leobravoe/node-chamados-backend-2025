@@ -1,75 +1,54 @@
-// server.js — app principal com prefixo /api
+// server.js — versão permissiva de CORS (aceita qualquer origem)
 // -----------------------------------------------------------------------------
-// O QUE ESTE ARQUIVO FAZ?
-// 1) Carrega variáveis de ambiente (.env) para process.env
-// 2) Cria um servidor HTTP com Express
-// 3) Expõe uma rota raiz (GET /) que lista os endpoints disponíveis
-// 4) Monta um agrupamento de rotas (Router) de CHAMADOS sob o prefixo /api/chamados
-//
-// TERMOS IMPORTANTES (para iniciantes):
-// - Servidor HTTP: programa que recebe pedidos (requests) e envia respostas (responses).
-// - Rota (endpoint): combinação de URL + método HTTP (GET, POST, PUT, PATCH, DELETE).
-// - Middleware: função que roda “no meio do caminho” entre o pedido e a resposta
-//   (ex.: express.json() transforma JSON do corpo em objeto JS).
-// - Router: “mini-aplicativo” com rotas específicas; ajuda a organizar o código
-//   separando responsabilidades (ex.: tudo de chamados fica em chamados.routes.js).
-//
-// SOBRE VARIÁVEIS DE AMBIENTE:
-// - Em projetos reais, você NÃO coloca senhas/URLs/portas “hardcoded” no código.
-// - Em vez disso, cria um arquivo .env (não versionado) e usa dotenv para carregar
-//   essas chaves em process.env (ex.: process.env.PORT).
+// Esta versão usa o middleware `cors()` sem opções — isso permite requisições
+// de qualquer origem (origin = '*'). É simples e útil para desenvolvimento
+// local rápido, mas NÃO é seguro para produção sem restrições.
 // -----------------------------------------------------------------------------
+// IMPORTS
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import chamadosRouter from "./routes/chamados.routes.js";
+// carrega variáveis do .env (se existir)
 dotenv.config();
-// ↑ Lê o arquivo .env (se existir) e popula process.env com as chaves definidas.
-//   Importante: chame dotenv.config() antes de acessar qualquer process.env.
+// cria a aplicação Express
 const app = express();
+// -------------------- CORS SIMPLIFICADO --------------------
+// Usando cors() sem opções: permite qualquer origem.
+// Útil para desenvolvimento quando o front e o back podem rodar em hosts/ports
+// diferentes e você não quer lidar com listas de origens agora.
+app.use(cors());
 // -----------------------------------------------------------------------------
-// MIDDLEWARE: interpretar JSON do corpo das requisições
-// - Sem isso, req.body seria undefined quando o cliente envia JSON.
-// - Exemplo: POST /api/chamados com corpo { "Usuarios_id": 1, "texto": "..." }
-//   → req.body vira { Usuarios_id: 1, texto: "..." }.
+// Observação importante:
+// - Com esta configuração, o servidor responderá a requisições de qualquer origem.
+// - Se você for usar cookies de autenticação (sessions), será necessário ajustar
+//   a configuração para permitir credentials e não usar origin '*'.
 // -----------------------------------------------------------------------------
+// interpreta JSON no corpo das requisições (req.body)
 app.use(express.json());
-// -----------------------------------------------------------------------------
 // ROTA DE BOAS-VINDAS (GET /)
-// - Retorna um “guia rápido” em JSON com os endpoints disponíveis da API.
-// - Útil para abrir no navegador e ter uma visão geral do que existe.
-// -----------------------------------------------------------------------------
 app.get("/", (_req, res) => {
   res.json({
-    // CHAMADOS
-    LISTAR:     "GET /api/chamados",
-    MOSTRAR:    "GET /api/chamados/:id",
-    CRIAR:      "POST /api/chamados  BODY: { Usuarios_id: number, texto: 'string', estado?: 'a'|'f', urlImagem?: 'string' }",
+    LISTAR: "GET /api/chamados",
+    MOSTRAR: "GET /api/chamados/:id",
+    CRIAR: "POST /api/chamados  BODY: { Usuarios_id: number, texto: 'string', estado?: 'a'|'f', urlImagem?: 'string' }",
     SUBSTITUIR: "PUT /api/chamados/:id  BODY: { Usuarios_id: number, texto: 'string', estado: 'a'|'f', urlImagem?: 'string' }",
-    ATUALIZAR:  "PATCH /api/chamados/:id  BODY: { Usuarios_id?: number, texto?: 'string', estado?: 'a'|'f', urlImagem?: 'string' }",
-    DELETAR:    "DELETE /api/chamados/:id",
+    ATUALIZAR: "PATCH /api/chamados/:id  BODY: { Usuarios_id?: number, texto?: 'string', estado?: 'a'|'f', urlImagem?: 'string' }",
+    DELETAR: "DELETE /api/chamados/:id",
   });
 });
-// -----------------------------------------------------------------------------
-// MONTAGEM DO ROUTER DE CHAMADOS EM /api/chamados
-// - chamadosRouter é um Router do Express definido em ./routes/chamados.routes.js.
-// - app.use("/api/chamados", chamadosRouter) diz ao Express:
-//     “Para qualquer caminho que COMEÇA com /api/chamados, use as rotas
-//      definidas dentro de chamadosRouter.”
-// - Isso adiciona o prefixo automaticamente, melhorando a organização:
-//     GET    /api/chamados
-//     GET    /api/chamados/:id
-//     POST   /api/chamados
-//     PUT    /api/chamados/:id
-//     PATCH  /api/chamados/:id
-//     DELETE /api/chamados/:id
-// -----------------------------------------------------------------------------
+// monta as rotas de chamados sob /api/chamados
 app.use("/api/chamados", chamadosRouter);
-// -----------------------------------------------------------------------------
-// INICIANDO O SERVIDOR
-// - process.env.PORT permite definir a porta via ambiente (ex.: PORT=8080).
-// - Caso não exista, usamos 3000 como padrão.
-// - app.listen inicia o servidor e imprime no console a URL local para teste.
-// -----------------------------------------------------------------------------
+// inicia o servidor (usa PORT do .env ou 3000)
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`http://localhost:${PORT}`));
-// Abra esse endereço no navegador para ver a rota GET / (a lista de endpoints).
+app.listen(PORT, () => {
+  console.log(`Servidor rodando em http://localhost:${PORT}`);
+  console.log("CORS configurado: permissivo (aceita qualquer origem).");
+});
+// -----------------------------------------------------------------------------
+// DICAS RÁPIDAS:
+// - Para desenvolvimento rápido: esta configuração é suficiente.
+// - Para produção: substitua por uma lista de origens ou use variável de ambiente.
+// - Se precisar enviar cookies entre front e back (cross-origin), use
+//   `credentials: true` e origin dinâmica (será feito no futuro).
+// -----------------------------------------------------------------------------
