@@ -23,7 +23,7 @@
 
 ## Visão rápida
 
-`AtendeAí` é uma API + protótipo para gerenciar uma fila de chamados em aulas práticas. Ideal para professores e alunos testarem gerenciamento de fila sem depender inicialmente de infraremota.
+`AtendeAí` é uma API + protótipo para gerenciar uma fila de chamados em aulas práticas.
 
 ---
 
