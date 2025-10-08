@@ -37,7 +37,7 @@ const isEstadoValido = (s) => s === "a" || s === "f";
 router.get("/", async (_req, res) => {
     try {
         const { rows } = await pool.query(
-            "SELECT * FROM chamados ORDER BY id DESC"
+            `SELECT * FROM chamados ORDER BY "id" DESC`
         );
         res.json(rows); // 200 OK (array de chamados)
     } catch {
@@ -57,7 +57,7 @@ router.get("/:id", async (req, res) => {
     }
     try {
         const { rows } = await pool.query(
-            "SELECT * FROM chamados WHERE id = $1",
+            `SELECT * FROM chamados WHERE "id" = $1`,
             [id]
         );
         if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
@@ -93,7 +93,7 @@ router.post("/", async (req, res) => {
     }
     try {
         const { rows } = await pool.query(
-            `INSERT INTO chamados (Usuarios_id, texto, estado, urlImagem)
+            `INSERT INTO chamados ("Usuarios_id", "texto", "estado", "urlImagem")
              VALUES ($1, $2, $3, $4)
              RETURNING *`,
             [uid, texto.trim(), est, urlImagem ?? null]
@@ -136,12 +136,12 @@ router.put("/:id", async (req, res) => {
     try {
         const { rows } = await pool.query(
             `UPDATE chamados
-                SET Usuarios_id = $1,
-                    texto       = $2,
-                    estado      = $3,
-                    urlImagem   = $4,
-                    data_atualizacao = now()
-            WHERE id = $5
+                SET "Usuarios_id" = $1,
+                    "texto"       = $2,
+                    "estado"      = $3,
+                    "urlImagem"   = $4,
+                    "data_atualizacao" = now()
+            WHERE "id" = $5
             RETURNING *`,
             [uid, texto.trim(), estado, urlImagem ?? null, id]
         );
@@ -209,12 +209,12 @@ router.patch("/:id", async (req, res) => {
     try {
         const { rows } = await pool.query(
             `UPDATE chamados
-                SET Usuarios_id      = COALESCE($1, Usuarios_id),
-                    texto            = COALESCE($2, texto),
-                    estado           = COALESCE($3, estado),
-                    urlImagem        = COALESCE($4, urlImagem),
-                    data_atualizacao = now()
-            WHERE id = $5
+                SET "Usuarios_id"      = COALESCE($1, "Usuarios_id"),
+                    "texto"            = COALESCE($2, "texto"),
+                    "estado"           = COALESCE($3, "estado"),
+                    "urlImagem"        = COALESCE($4, "urlImagem"),
+                    "data_atualizacao" = now()
+            WHERE "id" = $5
             RETURNING *`,
             [uid, novoTexto, novoEstado, novaUrl, id]
         );
@@ -226,6 +226,7 @@ router.patch("/:id", async (req, res) => {
                 .status(400)
                 .json({ erro: "Usuarios_id não existe (violação de chave estrangeira)" });
         }
+        console.log(e)
         res.status(500).json({ erro: "erro interno" });
     }
 });
@@ -240,7 +241,7 @@ router.delete("/:id", async (req, res) => {
     }
     try {
         const r = await pool.query(
-            "DELETE FROM chamados WHERE id = $1 RETURNING id",
+            `DELETE FROM chamados WHERE "id" = $1 RETURNING "id"`,
             [id]
         );
         if (!r.rowCount) return res.status(404).json({ erro: "não encontrado" });
