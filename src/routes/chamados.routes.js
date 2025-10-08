@@ -26,7 +26,9 @@
 // -----------------------------------------------------------------------------
 import { Router } from "express";
 import { pool } from "../database/db.js";
+import multer from "multer";
 const router = Router(); // cria o "mini-app" de rotas
+const upload = multer({ dest: 'uploads/' });
 // Função utilitária simples para validar o campo "estado"
 const isEstadoValido = (s) => s === "a" || s === "f";
 // -----------------------------------------------------------------------------
@@ -76,7 +78,7 @@ router.get("/:id", async (req, res) => {
 // - texto: string não vazia.
 // - estado: 'a' ou 'f'. Se não mandar, vamos assumir 'a' (aberto).
 // - urlImagem: opcional (string). Pode ser undefined/null.
-router.post("/", async (req, res) => {
+router.post("/", upload.single('imagem'), async (req, res) => {
     // Se req.body vier undefined (cliente não mandou JSON), "?? {}" usa objeto vazio
     const { Usuarios_id, texto, estado, urlImagem } = req.body ?? {};
     // Convertendo tipos e validando entradas:
@@ -101,6 +103,7 @@ router.post("/", async (req, res) => {
         // 201 Created + retornamos o chamado criado (inclui id gerado)
         res.status(201).json(rows[0]);
     } catch (e) {
+        console.log(e)
         // Se a FK (Usuarios_id) não existir, o Postgres lança erro 23503
         if (e?.code === "23503") {
             return res
