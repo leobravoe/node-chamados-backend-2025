@@ -163,12 +163,6 @@ MIT — sinta-se à vontade para usar/estudar o projeto. Modifique conforme nece
 
 ## Observações finais
 
-* Mantive o SQL de exemplo e os inserts no README original; para referência completa do esquema, consulte a seção "Plano de Dados (Dia 0)" do README original. fileciteturn0file0
-
-> Se quiser, posso também:
->
-> * Gerar um `README.md` com badges dinâmicos (CI, coverage) e exemplo real de `.env.example`;
-> * Criar arquivo `.env.example` e script de inicialização mais claro;
-> * Ajustar o `package.json` e adicionar comandos (lint, test, seed).
+* Mantive o SQL de exemplo e os inserts no README original; para referência completa do esquema, consulte a seção "Plano de Dados (Dia 0)" do README original. 
 
 <!-- Fim do README ajustado -->
