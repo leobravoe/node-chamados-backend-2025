@@ -53,12 +53,6 @@ router.post("/", async (req, res) => {
         );
         res.status(201).json(rows[0]);
     } catch (e) {
-        console.log(e)
-        if (e?.code === "23503") {
-            return res
-                .status(400)
-                .json({ erro: "Usuarios_id não existe (violação de chave estrangeira)" });
-        }
         res.status(500).json({ erro: "erro interno" });
     }
 });
@@ -94,11 +88,6 @@ router.put("/:id", async (req, res) => {
         if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
         res.json(rows[0]);
     } catch (e) {
-        if (e?.code === "23503") {
-            return res
-                .status(400)
-                .json({ erro: "Usuarios_id não existe (violação de chave estrangeira)" });
-        }
         res.status(500).json({ erro: "erro interno" });
     }
 });
@@ -154,12 +143,6 @@ router.patch("/:id", async (req, res) => {
         if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
         res.json(rows[0]);
     } catch (e) {
-        if (e?.code === "23503") {
-            return res
-                .status(400)
-                .json({ erro: "Usuarios_id não existe (violação de chave estrangeira)" });
-        }
-        console.log(e)
         res.status(500).json({ erro: "erro interno" });
     }
 });
