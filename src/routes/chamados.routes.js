@@ -1,9 +1,7 @@
 import { Router } from "express";
 import { pool } from "../database/db.js";
-import multer from "multer";
 
 const router = Router();
-const upload = multer({ dest: 'uploads/' });
 
 router.get("/", async (_req, res) => {
     try {
@@ -33,7 +31,7 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-router.post("/", upload.single('imagem'), async (req, res) => {
+router.post("/", async (req, res) => {
     const { Usuarios_id, texto, estado, urlImagem } = req.body ?? {};
     const uid = Number(Usuarios_id);
     const temUidValido = Number.isInteger(uid) && uid > 0;
