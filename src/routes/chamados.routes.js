@@ -52,7 +52,7 @@ router.post("/", async (req, res) => {
             [uid, texto.trim(), est, urlImagem ?? null]
         );
         res.status(201).json(rows[0]);
-    } catch (e) {
+    } catch {
         res.status(500).json({ erro: "erro interno" });
     }
 });
@@ -66,7 +66,7 @@ router.put("/:id", async (req, res) => {
     const uid = Number(Usuarios_id);
     const temUidValido = Number.isInteger(uid) && uid > 0;
     const temTextoValido = typeof texto === "string" && texto.trim() !== "";
-    const temEstadoValido = (est === "a" || est === "f");
+    const temEstadoValido = (estado === "a" || estado === "f");
     if (!temUidValido || !temTextoValido || !temEstadoValido) {
         return res.status(400).json({
             erro:
@@ -87,7 +87,7 @@ router.put("/:id", async (req, res) => {
         );
         if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
         res.json(rows[0]);
-    } catch (e) {
+    } catch {
         res.status(500).json({ erro: "erro interno" });
     }
 });
@@ -122,7 +122,7 @@ router.patch("/:id", async (req, res) => {
     }
     let novoEstado = null;
     if (estado !== undefined) {
-        if (!(est === "a" || est === "f")) {
+        if (!(estado === "a" || estado === "f")) {
             return res.status(400).json({ erro: "estado deve ser 'a' ou 'f'" });
         }
         novoEstado = estado;
@@ -142,7 +142,7 @@ router.patch("/:id", async (req, res) => {
         );
         if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
         res.json(rows[0]);
-    } catch (e) {
+    } catch {
         res.status(500).json({ erro: "erro interno" });
     }
 });
