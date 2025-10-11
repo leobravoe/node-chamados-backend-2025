@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS Chamados (
   "data_atualizacao"  TIMESTAMP    NOT NULL DEFAULT now()
 );
 
-INSERT INTO Usuarios (nome, email, senha_hash, papel) VALUES
+INSERT INTO Usuarios ("nome", "email", "senha_hash", "papel") VALUES
 ('Usuário',                'user@user.com.br',             '$2b$12$hOa7C35BZpDh7kJYoCld9YbLRMsvIkVzvr3LMBDHT46/Kpx7/aEzW', 0),
 ('Admin',                  'admin@admin.com.br',           '$2b$12$uBy.SQ6EAxn/o/clzQHi.ydZM.v4sM78Rnd/DgwpLyGhkQltSy6n0', 1),
 ('Alice Silva',            'alice@exemplo.com.br',         '$2b$12$Bnqzpx4w6TaRk8ck5bHtrVmtKV/OmjJ/qWWqBPmKhSZ0aSgKvSOAj', 0),
