@@ -1,23 +1,23 @@
 SET client_encoding = 'UTF8';
 
 CREATE TABLE IF NOT EXISTS Usuarios (
-  "id"                SERIAL       PRIMARY KEY,
-  "nome"              VARCHAR(255) NOT NULL,
-  "email"             VARCHAR(255) NOT NULL UNIQUE,
-  "senha_hash"        VARCHAR(255) NOT NULL,
-  "papel"             SMALLINT     NOT NULL CHECK (papel IN (0,1)),  -- 0=aluno, 1=professor
-  "data_criacao"      TIMESTAMP    NOT NULL DEFAULT now(),
-  "data_atualizacao"  TIMESTAMP    NOT NULL DEFAULT now()
+    "id"                SERIAL       PRIMARY KEY,
+    "nome"              VARCHAR(255) NOT NULL,
+    "email"             VARCHAR(255) NOT NULL UNIQUE,
+    "senha_hash"        VARCHAR(255) NOT NULL,
+    "papel"             SMALLINT     NOT NULL CHECK (papel IN (0,1)),  -- 0=aluno, 1=professor
+    "data_criacao"      TIMESTAMP    NOT NULL DEFAULT now(),
+    "data_atualizacao"  TIMESTAMP    NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS Chamados (
-  "id"                SERIAL       PRIMARY KEY,
-  "Usuarios_id"       INTEGER      NOT NULL REFERENCES Usuarios("id") ON DELETE CASCADE,
-  "texto"             VARCHAR(255) NOT NULL,
-  "estado"            CHAR(1)      NOT NULL CHECK (estado IN ('a','f')), -- a=aberto, f=fechado
-  "urlImagem"         VARCHAR(255),
-  "data_criacao"      TIMESTAMP    NOT NULL DEFAULT now(),
-  "data_atualizacao"  TIMESTAMP    NOT NULL DEFAULT now()
+    "id"                SERIAL       PRIMARY KEY,
+    "Usuarios_id"       INTEGER      NOT NULL REFERENCES Usuarios("id") ON DELETE CASCADE,
+    "texto"             VARCHAR(255) NOT NULL,
+    "estado"            CHAR(1)      NOT NULL CHECK (estado IN ('a','f')), -- a=aberto, f=fechado
+    "urlImagem"         VARCHAR(255),
+    "data_criacao"      TIMESTAMP    NOT NULL DEFAULT now(),
+    "data_atualizacao"  TIMESTAMP    NOT NULL DEFAULT now()
 );
 
 INSERT INTO Usuarios ("nome", "email", "senha_hash", "papel") VALUES
