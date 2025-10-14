@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS "Chamados" (
     "Usuarios_id"       INTEGER      NOT NULL REFERENCES "Usuarios"("id"),
     "texto"             VARCHAR(255) NOT NULL,
     "estado"            CHAR(1)      NOT NULL CHECK ("estado" IN ('a','f')),
-    "url_imagem"         VARCHAR(255),
+    "url_imagem"        VARCHAR(255),
     "data_criacao"      TIMESTAMP    NOT NULL DEFAULT now(),
     "data_atualizacao"  TIMESTAMP    NOT NULL DEFAULT now()
 );
