@@ -6,7 +6,7 @@ const router = Router();
 router.get("/", async (_req, res) => {
     try {
         const { rows } = await pool.query(
-            `SELECT * FROM chamados ORDER BY "id" DESC`
+            `SELECT * FROM "Chamados" ORDER BY "id" DESC`
         );
         res.json(rows);
     } catch {
@@ -21,7 +21,7 @@ router.get("/:id", async (req, res) => {
     }
     try {
         const { rows } = await pool.query(
-            `SELECT * FROM chamados WHERE "id" = $1`,
+            `SELECT * FROM "Chamados" WHERE "id" = $1`,
             [id]
         );
         if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
@@ -46,7 +46,7 @@ router.post("/", async (req, res) => {
     }
     try {
         const { rows } = await pool.query(
-            `INSERT INTO chamados ("Usuarios_id", "texto", "estado", "urlImagem")
+            `INSERT INTO "Chamados" ("Usuarios_id", "texto", "estado", "urlImagem")
              VALUES ($1, $2, $3, $4)
              RETURNING *`,
             [uid, texto.trim(), est, urlImagem ?? null]
@@ -75,7 +75,7 @@ router.put("/:id", async (req, res) => {
     }
     try {
         const { rows } = await pool.query(
-            `UPDATE chamados
+            `UPDATE "Chamados"
                  SET "Usuarios_id" = $1,
                      "texto"       = $2,
                      "estado"      = $3,
@@ -130,7 +130,7 @@ router.patch("/:id", async (req, res) => {
     const novaUrl = urlImagem === undefined ? null : urlImagem;
     try {
         const { rows } = await pool.query(
-            `UPDATE chamados
+            `UPDATE "Chamados"
                  SET "Usuarios_id"      = COALESCE($1, "Usuarios_id"),
                      "texto"            = COALESCE($2, "texto"),
                      "estado"           = COALESCE($3, "estado"),
@@ -154,7 +154,7 @@ router.delete("/:id", async (req, res) => {
     }
     try {
         const r = await pool.query(
-            `DELETE FROM chamados WHERE "id" = $1 RETURNING "id"`,
+            `DELETE FROM "Chamados" WHERE "id" = $1 RETURNING "id"`,
             [id]
         );
         if (!r.rowCount) return res.status(404).json({ erro: "não encontrado" });

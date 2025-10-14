@@ -1,26 +1,26 @@
 SET client_encoding = 'UTF8';
 
-CREATE TABLE IF NOT EXISTS Usuarios (
+CREATE TABLE IF NOT EXISTS "Usuarios" (
     "id"                SERIAL       PRIMARY KEY,
     "nome"              VARCHAR(255) NOT NULL,
     "email"             VARCHAR(255) NOT NULL UNIQUE,
     "senha_hash"        VARCHAR(255) NOT NULL,
-    "papel"             SMALLINT     NOT NULL CHECK (papel IN (0,1)),  -- 0=aluno, 1=professor
+    "papel"             SMALLINT     NOT NULL CHECK ("papel" IN (0,1)),
     "data_criacao"      TIMESTAMP    NOT NULL DEFAULT now(),
     "data_atualizacao"  TIMESTAMP    NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS Chamados (
+CREATE TABLE IF NOT EXISTS "Chamados" (
     "id"                SERIAL       PRIMARY KEY,
-    "Usuarios_id"       INTEGER      NOT NULL REFERENCES Usuarios("id") ON DELETE CASCADE,
+    "Usuarios_id"       INTEGER      NOT NULL REFERENCES "Usuarios"("id"),
     "texto"             VARCHAR(255) NOT NULL,
-    "estado"            CHAR(1)      NOT NULL CHECK (estado IN ('a','f')), -- a=aberto, f=fechado
+    "estado"            CHAR(1)      NOT NULL CHECK ("estado" IN ('a','f')),
     "urlImagem"         VARCHAR(255),
     "data_criacao"      TIMESTAMP    NOT NULL DEFAULT now(),
     "data_atualizacao"  TIMESTAMP    NOT NULL DEFAULT now()
 );
 
-INSERT INTO Usuarios ("nome", "email", "senha_hash", "papel") VALUES
+INSERT INTO "Usuarios" ("nome", "email", "senha_hash", "papel") VALUES
 ('Usuário',                'user@user.com.br',             '$2b$12$hOa7C35BZpDh7kJYoCld9YbLRMsvIkVzvr3LMBDHT46/Kpx7/aEzW', 0),
 ('Admin',                  'admin@admin.com.br',           '$2b$12$uBy.SQ6EAxn/o/clzQHi.ydZM.v4sM78Rnd/DgwpLyGhkQltSy6n0', 1),
 ('Alice Silva',            'alice@exemplo.com.br',         '$2b$12$Bnqzpx4w6TaRk8ck5bHtrVmtKV/OmjJ/qWWqBPmKhSZ0aSgKvSOAj', 0),
@@ -36,7 +36,7 @@ INSERT INTO Usuarios ("nome", "email", "senha_hash", "papel") VALUES
 ('Karen Oliveira',         'karen@exemplo.com.br',         '$2b$12$9x2GHtGECKzuQCJS65.1klPkri2xpNTvbEZLDlrVsvVBLZp4cnKlc', 0),
 ('Luiz Fernando Teixeira', 'luiz.teixeira@exemplo.com.br', '$2b$12$woeItTdOln/h4lP8Dc65k1XqFI5fOlSADwHsQk/T50ES8K9I0dpn4', 1);
 
-INSERT INTO Chamados ("Usuarios_id", "texto", "estado") VALUES
+INSERT INTO "Chamados" ("Usuarios_id", "texto", "estado") VALUES
 (1,  'Preciso de ajuda com JS', 'a'),
 (1,  'Erro ao instalar dependências no npm',          'a'),
 (2,  'Dúvida sobre rotas no Express',                 'f'),
@@ -49,7 +49,7 @@ INSERT INTO Chamados ("Usuarios_id", "texto", "estado") VALUES
 (9,  'Padronizar mensagens de erro da API',           'a'),
 (10, 'Timeout ao fazer fetch no front',               'a');
 
-INSERT INTO Chamados ("Usuarios_id", "texto", "estado", "urlImagem") VALUES
+INSERT INTO "Chamados" ("Usuarios_id", "texto", "estado", "urlImagem") VALUES
 (11, 'Layout da lista não carrega no CSS',            'a', '/img/wireframe-lista.png'),
 (12, 'Bug ao atualizar produto (PUT)',                'f', '/img/bug-put.png'),
 (13, 'Imagem não aparece no README',                  'a', '/img/readme-img.png'),
