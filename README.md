@@ -1,4 +1,4 @@
-# AtendeAí — Fila de Ajuda em Sala (ajustado)
+# AtendeAí — Fila de Ajuda em Sala
 
 > Organize a fila de atendimento em aulas práticas: menos espera, mais visibilidade e justiça.
 
@@ -61,9 +61,9 @@ Critérios de aceite: criar → aparece com horário; encerrar → muda estado o
 
 ---
 
-## Modelo de dados (rápido)
+## Modelo de dados (resumo)
 
-Resumo: `Usuarios` (id, nome, email, senha_hash, papel, timestamps) e `Chamados` (id, Usuarios_id, texto, estado, urlImagem, timestamps). O README original contém SQL de criação com exemplos de inserts. (Fonte: README original). fileciteturn0file0
+Resumo: `Usuarios` (id, nome, email, senha_hash, papel, timestamps) e `Chamados` (id, Usuarios_id, texto, estado, urlImagem, timestamps). O README original contém SQL de criação com exemplos de inserts.
 
 ---
 
@@ -79,6 +79,9 @@ cd node-chamados-backend
 ```
 
 2. Copie o `.env.example` para `.env` e ajuste as variáveis (ex.: DB_HOST, DB_USER, DB_PASSWORD, PORT).
+```bash
+copy .env.example .env
+```
 
 3. Instale dependências
 
@@ -158,11 +161,3 @@ npm run reset-database
 ## Licença
 
 MIT — sinta-se à vontade para usar/estudar o projeto. Modifique conforme necessidade.
-
----
-
-## Observações finais
-
-* Mantive o SQL de exemplo e os inserts no README original; para referência completa do esquema, consulte a seção "Plano de Dados (Dia 0)" do README original. 
-
-<!-- Fim do README ajustado -->
