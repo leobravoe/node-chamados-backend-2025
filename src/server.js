@@ -12,9 +12,9 @@ app.get("/", (_req, res) => {
     res.json({
         LISTAR: "GET /api/chamados",
         MOSTRAR: "GET /api/chamados/:id",
-        CRIAR: "POST /api/chamados  BODY: { Usuarios_id: number, texto: 'string', estado?: 'a'|'f', urlImagem?: 'string' }",
-        SUBSTITUIR: "PUT /api/chamados/:id  BODY: { Usuarios_id: number, texto: 'string', estado: 'a'|'f', urlImagem?: 'string' }",
-        ATUALIZAR: "PATCH /api/chamados/:id  BODY: { Usuarios_id?: number, texto?: 'string', estado?: 'a'|'f', urlImagem?: 'string' }",
+        CRIAR: "POST /api/chamados  BODY: { Usuarios_id: number, texto: 'string', estado?: 'a'|'f', url_imagem?: 'string' }",
+        SUBSTITUIR: "PUT /api/chamados/:id  BODY: { Usuarios_id: number, texto: 'string', estado: 'a'|'f', url_imagem?: 'string' }",
+        ATUALIZAR: "PATCH /api/chamados/:id  BODY: { Usuarios_id?: number, texto?: 'string', estado?: 'a'|'f', url_imagem?: 'string' }",
         DELETAR: "DELETE /api/chamados/:id",
     });
 });
