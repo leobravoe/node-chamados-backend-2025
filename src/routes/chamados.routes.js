@@ -32,7 +32,7 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-    const { Usuarios_id, texto, estado, urlImagem } = req.body ?? {};
+    const { Usuarios_id, texto, estado, url_imagem } = req.body ?? {};
     const uid = Number(Usuarios_id);
     const temUidValido = Number.isInteger(uid) && uid > 0;
     const temTextoValido = typeof texto === "string" && texto.trim() !== "";
@@ -46,10 +46,10 @@ router.post("/", async (req, res) => {
     }
     try {
         const { rows } = await pool.query(
-            `INSERT INTO "Chamados" ("Usuarios_id", "texto", "estado", "urlImagem")
+            `INSERT INTO "Chamados" ("Usuarios_id", "texto", "estado", "url_imagem")
              VALUES ($1, $2, $3, $4)
              RETURNING *`,
-            [uid, texto.trim(), est, urlImagem ?? null]
+            [uid, texto.trim(), est, url_imagem ?? null]
         );
         res.status(201).json(rows[0]);
     } catch {
@@ -59,7 +59,7 @@ router.post("/", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
     const id = Number(req.params.id);
-    const { Usuarios_id, texto, estado, urlImagem } = req.body ?? {};
+    const { Usuarios_id, texto, estado, url_imagem } = req.body ?? {};
     if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ erro: "id inválido" });
     }
@@ -70,7 +70,7 @@ router.put("/:id", async (req, res) => {
     if (!temUidValido || !temTextoValido || !temEstadoValido) {
         return res.status(400).json({
             erro:
-                "Para PUT, envie todos os campos: Usuarios_id (inteiro>0), texto (string), estado ('a' | 'f') e urlImagem (opcional)",
+                "Para PUT, envie todos os campos: Usuarios_id (inteiro>0), texto (string), estado ('a' | 'f') e url_imagem (opcional)",
         });
     }
     try {
@@ -79,11 +79,11 @@ router.put("/:id", async (req, res) => {
                  SET "Usuarios_id" = $1,
                      "texto"       = $2,
                      "estado"      = $3,
-                     "urlImagem"   = $4,
+                     "url_imagem"   = $4,
                      "data_atualizacao" = now()
              WHERE "id" = $5
              RETURNING *`,
-            [uid, texto.trim(), estado, urlImagem ?? null, id]
+            [uid, texto.trim(), estado, url_imagem ?? null, id]
         );
         if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
         res.json(rows[0]);
@@ -94,7 +94,7 @@ router.put("/:id", async (req, res) => {
 
 router.patch("/:id", async (req, res) => {
     const id = Number(req.params.id);
-    const { Usuarios_id, texto, estado, urlImagem } = req.body ?? {};
+    const { Usuarios_id, texto, estado, url_imagem } = req.body ?? {};
     if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ erro: "id inválido" });
     }
@@ -102,7 +102,7 @@ router.patch("/:id", async (req, res) => {
         Usuarios_id === undefined &&
         texto === undefined &&
         estado === undefined &&
-        urlImagem === undefined
+        url_imagem === undefined
     ) {
         return res.status(400).json({ erro: "envie ao menos um campo para atualizar" });
     }
@@ -127,14 +127,14 @@ router.patch("/:id", async (req, res) => {
         }
         novoEstado = estado;
     }
-    const novaUrl = urlImagem === undefined ? null : urlImagem;
+    const novaUrl = url_imagem === undefined ? null : url_imagem;
     try {
         const { rows } = await pool.query(
             `UPDATE "Chamados"
                  SET "Usuarios_id"      = COALESCE($1, "Usuarios_id"),
                      "texto"            = COALESCE($2, "texto"),
                      "estado"           = COALESCE($3, "estado"),
-                     "urlImagem"        = COALESCE($4, "urlImagem"),
+                     "url_imagem"        = COALESCE($4, "url_imagem"),
                      "data_atualizacao" = now()
              WHERE "id" = $5
              RETURNING *`,
