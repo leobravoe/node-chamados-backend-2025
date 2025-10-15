@@ -16,8 +16,7 @@
 8. [Endpoints principais](#endpoints-principais)
 9. [Comandos úteis / scripts npm](#comandos-úteis--scripts-npm)
 10. [Erros comuns & dicas](#erros-comuns--dicas)
-11. [Como contribuir](#como-contribuir)
-12. [Licença](#licença)
+11. [Licença](#licença)
 
 ---
 
@@ -29,7 +28,7 @@
 
 ## Problema e objetivo
 
-Em aulas práticas, alunos aguardam atendimento sem visibilidade da ordem e do tempo de espera. O objetivo é reduzir frustração e tornar o processo justo — primeiro por um protótipo em navegador (LocalStorage) e, em seguida, por uma API Express com PostgreSQL.
+Em aulas práticas, alunos aguardam atendimento sem visibilidade da ordem e do tempo de espera. O objetivo é reduzir frustração e tornar o processo justo.
 
 ---
 
@@ -205,14 +204,6 @@ npm run dev
 
 * Conexão com banco → ver arquivo `.env` na raiz do projeto (host/port/user/senha).
 * Arquivo `.env` não existe na raiz do projeto → criar arquivo `.env` na raiz do projeto com base no arquivo `.env.example`
-
----
-
-## Como contribuir
-
-1. Abra uma *issue* descrevendo o problema/feature.
-2. Faça um fork, crie branch `feature/<nome>` e submeta um PR com descrição clara e passos para testar.
-3. Mantenha commits pequenos e mensagens claras.
 
 ---
 
