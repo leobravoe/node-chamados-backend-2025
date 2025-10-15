@@ -11,7 +11,7 @@
 3. [Quem usa](#quem-usa)
 4. [Funcionalidades (MVP)](#funcionalidades-mvp)
 5. [Tecnologias](#tecnologias)
-6. [Modelo de dados (rápido)](#modelo-de-dados-rápido)
+6. [Modelo de dados](#modelo-de-dados-rápido)
 7. [Como rodar localmente](#como-rodar-localmente)
 8. [Endpoints principais](#endpoints-principais)
 9. [Comandos úteis / scripts npm](#comandos-úteis--scripts-npm)
