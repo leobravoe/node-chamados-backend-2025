@@ -141,10 +141,8 @@ npm run dev
 
 ## Erros comuns & dicas rápidas
 
-* `req.body` undefined → falta `app.use(express.json())` ou Content-Type não definido.
-* Conexão com banco → ver `.env` (host/port/user/senha).
-* `relation does not exist` → executar SQL de criação das tabelas.
-* Senhas em texto → usar `bcrypt` para hash (o projeto já exemplifica hashes didáticos).
+* Conexão com banco → ver arquivo `.env` na raiz do projeto (host/port/user/senha).
+* Arquivo `.env` não existe na raiz do projeto → criar arquivo `.env` na raiz do projeto com base no arquivo `.env.example`
 
 ---
 
