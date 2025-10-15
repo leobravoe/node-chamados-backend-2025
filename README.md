@@ -11,7 +11,7 @@
 3. [Quem usa](#quem-usa)
 4. [Funcionalidades (MVP)](#funcionalidades-mvp)
 5. [Tecnologias](#tecnologias)
-6. [Modelo de dados](#modelo-de-dados-rápido)
+6. [Modelo de dados](#modelo-de-dados)
 7. [Como rodar localmente](#como-rodar-localmente)
 8. [Endpoints principais](#endpoints-principais)
 9. [Comandos úteis / scripts npm](#comandos-úteis--scripts-npm)
@@ -59,7 +59,7 @@ Critérios de aceite: logar no sistema como aluno → criar chamado → chamado 
 
 ---
 
-## Modelo de dados (resumo)
+## Modelo de dados
 
 Resumo: `Usuarios` (id, nome, email, senha_hash, papel, timestamps) e `Chamados` (id, Usuarios_id, texto, estado, url_imagem, timestamps).
 
@@ -167,7 +167,7 @@ npm run dev
 
 ---
 
-## Endpoints principais (exemplos)
+## Endpoints principais
 
 > Rota base: `http://localhost:<PORT>/api`
 
