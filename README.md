@@ -89,18 +89,17 @@ copy .env.example .env
 npm install
 ```
 
-4. Rodar em modo desenvolvimento
-
-```bash
-npm run dev
-# ou conforme package.json: node server.js ou npm start
-```
-
-5. Criar banco e tabelas
+4. Criar banco e tabelas
 
 ```bash
 npm run reset-database
 # ou execute o arquivo SQL: psql -U <user> -d <db> -f ./src/database/banco.sql
+```
+
+5. Rodar em modo desenvolvimento
+
+```bash
+npm run dev
 ```
 
 6. Testes rápidos com curl (exemplos abaixo em Endpoints principais).
@@ -136,8 +135,7 @@ npm run reset-database
 ## Comandos úteis / scripts npm
 
 * `npm run dev` — roda em modo desenvolvimento
-* `npm run reset-database` — cria/zera banco (ver package.json)
-* `npm test` — (se houver) executar testes
+* `npm run reset-database` — cria/zera banco
 
 ---
 
