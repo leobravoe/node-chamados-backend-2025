@@ -47,9 +47,8 @@ Em aulas práticas, alunos aguardam atendimento sem visibilidade da ordem e do t
 * Criar chamado (texto, imagem opcional)
 * Listar chamados ordenados por data de criação
 * Encerrar chamado (marcar como fechado)
-* Versão cliente: protótipo em LocalStorage e futura versão em React
 
-Critérios de aceite: criar → aparece com horário; encerrar → muda estado ou some da lista conforme filtro.
+Critérios de aceite: logar no sistema como aluno → criar chamado → chamado aparece com horário → logar no sistema como professor → encerrar chamado → o estado do chamado é alterado e pode sumir da lista conforme filtro aplicado.
 
 ---
 
