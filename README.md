@@ -62,7 +62,7 @@ Critérios de aceite: logar no sistema como aluno → criar chamado → chamado 
 
 ## Modelo de dados (resumo)
 
-Resumo: `Usuarios` (id, nome, email, senha_hash, papel, timestamps) e `Chamados` (id, Usuarios_id, texto, estado, urlImagem, timestamps).
+Resumo: `Usuarios` (id, nome, email, senha_hash, papel, timestamps) e `Chamados` (id, Usuarios_id, texto, estado, url_imagem, timestamps).
 
 ``` SQL
 SET client_encoding = 'UTF8';
@@ -131,7 +131,7 @@ INSERT INTO "Chamados" ("Usuarios_id", "texto", "estado", "url_imagem") VALUES
 
 ## Como rodar localmente
 
-**Pré-requisitos**: Node.js (LTS), PostgreSQL (opcional se for usar LocalStorage).
+**Pré-requisitos**: Node.js (LTS), PostgreSQL instalado.
 
 1. Clone o repositório
 
