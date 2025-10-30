@@ -8,6 +8,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// armazenamento de arquivos enviados (pasta na raiz /uploads)
+app.use('/uploads', express.static('./uploads'));
+
 app.get("/", (_req, res) => {
     res.json({
         LISTAR: "GET /api/chamados",
