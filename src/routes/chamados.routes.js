@@ -1,8 +1,27 @@
+// src/routes/chamados.routes.js
 import { Router } from "express";
+import { unlink } from 'node:fs/promises'; // unlink do fs para apagar arquivo
 import { pool } from "../database/db.js";
+import multer from "multer"; // import do multer
+import path from "path";     // import do path
+import fs from "fs";         // import do fs
 
 const router = Router();
 
+// setup mínimo de upload em disco
+const uploadDir = path.resolve('uploads');
+fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  }
+});
+const upload = multer({ storage });
+
+// Rota /api/chamados
 router.get("/", async (_req, res) => {
     try {
         const { rows } = await pool.query(
@@ -14,6 +33,7 @@ router.get("/", async (_req, res) => {
     }
 });
 
+// Rota /api/chamados/1
 router.get("/:id", async (req, res) => {
     const id = Number(req.params.id);
 
@@ -33,16 +53,21 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-router.post("/", async (req, res) => {
-    const { Usuarios_id, texto, estado, url_imagem } = req.body ?? {};
+// Rota POST /api/chamados
+router.post("/", upload.single("imagem"), async (req, res) => {
+    const { Usuarios_id, texto, estado } = req.body ?? {};
 
     const uid = Number(Usuarios_id);
+    const est = estado ?? "a";
+    // Configura a url da imagem
+    const url_imagem = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
+
     const temUidValido = Number.isInteger(uid) && uid > 0;
     const temTextoValido = typeof texto === "string" && texto.trim() !== "";
-    const est = estado ?? "a";
     const temEstadoValido = (est === "a" || est === "f");
 
     if (!temUidValido || !temTextoValido || !temEstadoValido) {
+        if(req.file?.path) await unlink(req.file?.path);
         return res.status(400).json({
             erro:
                 "Campos obrigatórios: Usuarios_id (inteiro>0), texto (string) e estado ('a' ou 'f' — se ausente, assume 'a')",
@@ -54,10 +79,11 @@ router.post("/", async (req, res) => {
             `INSERT INTO "Chamados" ("Usuarios_id", "texto", "estado", "url_imagem")
              VALUES ($1, $2, $3, $4)
              RETURNING *`,
-            [uid, texto.trim(), est, url_imagem ?? null]
+            [uid, texto.trim(), est, url_imagem]
         );
         res.status(201).json(rows[0]);
     } catch {
+        if(req.file?.path) await unlink(req.file?.path);
         res.status(500).json({ erro: "erro interno" });
     }
 });
