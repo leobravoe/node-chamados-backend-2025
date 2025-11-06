@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";// Parser de cookies → preenche req.cookies
+import { authMiddleware } from "./middlewares/auth.js";    // Middleware de autenticação (access token)
 import chamadosRouter from "./routes/chamados.routes.js";
 import usuariosRouter from "./routes/usuarios.routes.js";  // Rotas de auth/registro/refresh
 dotenv.config();
@@ -36,7 +37,8 @@ app.get("/", (_req, res) => {
 // - /api/usuarios/logout    → apaga cookie do refresh
 app.use("/api/usuarios", usuariosRouter);
 
-app.use("/api/chamados", chamadosRouter);
+// Colocar um middleware para proteger todas as rotas
+app.use("/api/chamados", authMiddleware, chamadosRouter);
 
 const PORT = process.env.PORT || 3000;
 

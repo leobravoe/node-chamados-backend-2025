@@ -55,18 +55,18 @@ router.get("/:id", async (req, res) => {
 
 // Rota POST /api/chamados
 router.post("/", upload.single("imagem"), async (req, res) => {
-    const { Usuarios_id, texto, estado } = req.body ?? {};
+    const { texto, estado } = req.body ?? {};
 
-    const uid = Number(Usuarios_id);
+    // Pego o ID do usuário logado
+    const uid = req.user.id;
     const est = estado ?? "a";
     // Configura a url da imagem
     const url_imagem = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
 
-    const temUidValido = Number.isInteger(uid) && uid > 0;
     const temTextoValido = typeof texto === "string" && texto.trim() !== "";
     const temEstadoValido = (est === "a" || est === "f");
 
-    if (!temUidValido || !temTextoValido || !temEstadoValido) {
+    if (!temTextoValido || !temEstadoValido) {
         if(req.file?.path) await unlink(req.file?.path);
         return res.status(400).json({
             erro:
@@ -90,18 +90,20 @@ router.post("/", upload.single("imagem"), async (req, res) => {
 
 router.put("/:id", async (req, res) => {
     const id = Number(req.params.id);
-    const { Usuarios_id, texto, estado, url_imagem } = req.body ?? {};
+    const { texto, estado } = req.body ?? {};
 
     if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ erro: "id inválido" });
     }
+    // Pegar o id do usuário logado
+    const uid = req.user.id;
+    // Saber se é ou não Admin
+    const isAdmin = req.user.papel == "1";
 
-    const uid = Number(Usuarios_id);
-    const temUidValido = Number.isInteger(uid) && uid > 0;
     const temTextoValido = typeof texto === "string" && texto.trim() !== "";
     const temEstadoValido = (estado === "a" || estado === "f");
 
-    if (!temUidValido || !temTextoValido || !temEstadoValido) {
+    if (!temTextoValido || !temEstadoValido) {
         return res.status(400).json({
             erro: "Para PUT, envie todos os campos: Usuarios_id (inteiro>0), texto (string), estado ('a' | 'f') e url_imagem (opcional)",
         });
@@ -110,14 +112,14 @@ router.put("/:id", async (req, res) => {
     try {
         const { rows } = await pool.query(
             `UPDATE "Chamados"
-                 SET "Usuarios_id" = $1,
-                     "texto"       = $2,
-                     "estado"      = $3,
-                     "url_imagem"   = $4,
+                 SET "texto"       = $1,
+                     "estado"      = $2,
+                     "url_imagem"   = $3,
                      "data_atualizacao" = now()
-             WHERE "id" = $5
+             WHERE "id" = $4 and
+                  ("Usuarios_id" = $5 or $6 )
              RETURNING *`,
-            [uid, texto.trim(), estado, url_imagem ?? null, id]
+            [texto.trim(), estado, null, id, uid, isAdmin]
         );
         if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
         res.json(rows[0]);

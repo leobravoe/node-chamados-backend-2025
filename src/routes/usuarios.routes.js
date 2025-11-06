@@ -105,4 +105,80 @@ router.post("/register", async (req, res) => {
   }
 });
 
+router.post("/login", async (req, res) => {
+  // Autentica por email/senha:
+  // 1) busca usuário pelo email;
+  // 2) compara senha com hash;
+  // 3) emite access + refresh; o refresh vai no cookie HttpOnly.
+  const { email, senha } = req.body ?? {};
+  if (!email || !senha) return res.status(400).json({ erro: "email e senha são obrigatórios" });
+
+  try {
+    const r = await pool.query(
+      `SELECT "id","nome","email","senha_hash","papel" FROM "Usuarios" WHERE "email" = $1`,
+      [email]
+    );
+    if (!r.rowCount) return res.status(401).json({ erro: "credenciais inválidas" });
+
+    const u = r.rows[0];
+    const ok = await bcrypt.compare(senha, u.senha_hash); // compara senha em texto com hash armazenado
+    if (!ok) return res.status(401).json({ erro: "credenciais inválidas" });
+
+    const access_token = signAccessToken(u);    // token curto para Authorization: Bearer
+    const refresh_token = signRefreshToken(u);  // token longo para rotacionar sessão
+    setRefreshCookie(res, req, refresh_token);  // grava refresh em cookie HttpOnly
+
+    return res.json({
+      token_type: "Bearer",
+      access_token,
+      expires_in: JWT_ACCESS_EXPIRES,
+      user: { id: u.id, nome: u.nome, email: u.email, papel: u.papel },
+    });
+  } catch {
+    return res.status(500).json({ erro: "erro interno" });
+  }
+});
+
+router.post("/logout", async (req, res) => {
+  // “Logout” stateless: apenas remove o cookie de refresh no cliente
+  clearRefreshCookie(res, req);
+  return res.status(204).end();
+});
+
+router.post("/refresh", async (req, res) => {
+  // Emite novo par de tokens usando o refresh do cookie:
+  // 1) lê cookie HttpOnly;
+  // 2) verifica assinatura/tipo;
+  // 3) checa se o usuário ainda existe;
+  // 4) devolve novo access e rotaciona o refresh no cookie.
+  const refresh = req.cookies?.[REFRESH_COOKIE];
+  if (!refresh) return res.status(401).json({ erro: "refresh ausente" });
+
+  try {
+    const payload = jwt.verify(refresh, JWT_REFRESH_SECRET);
+    if (payload.tipo !== "refresh") return res.status(400).json({ erro: "refresh inválido" });
+
+    const r = await pool.query(
+      `SELECT "id","nome","email","papel" FROM "Usuarios" WHERE "id" = $1`,
+      [payload.sub]
+    );
+    if (!r.rowCount) return res.status(401).json({ erro: "usuário não existe mais" });
+
+    const u = r.rows[0];
+    const new_access = signAccessToken(u);      // novo access token curto
+    const new_refresh = signRefreshToken(u);    // refresh rotacionado
+    setRefreshCookie(res, req, new_refresh);    // atualiza cookie HttpOnly
+
+    return res.json({
+      token_type: "Bearer",
+      access_token: new_access,
+      expires_in: JWT_ACCESS_EXPIRES,
+    });
+  } catch {
+    // Se o refresh estiver inválido/expirado, apaga cookie para não “travar” o cliente
+    clearRefreshCookie(res, req);
+    return res.status(401).json({ erro: "refresh inválido ou expirado" });
+  }
+});
+
 export default router;              // Exporta o roteador para ser montado no servidor principal
