@@ -1,12 +1,19 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import cookieParser from "cookie-parser";// Parser de cookies → preenche req.cookies
 import chamadosRouter from "./routes/chamados.routes.js";
+import usuariosRouter from "./routes/usuarios.routes.js";  // Rotas de auth/registro/refresh
 dotenv.config();
 const app = express();
 
-app.use(cors());
 app.use(express.json());
+// Lê o cabeçalho Cookie e preenche req.cookies com {nome: valor}. 
+// Com um segredo, valida cookies assinados e expõe em req.signedCookies 
+// permitindo ao servidor acessar, por exemplo, o refresh_token HttpOnly.
+app.use(cookieParser());
+
+app.use(cors());
 
 // armazenamento de arquivos enviados (pasta na raiz /uploads)
 app.use('/uploads', express.static('./uploads'));
@@ -21,6 +28,13 @@ app.get("/", (_req, res) => {
         DELETAR: "DELETE /api/chamados/:id",
     });
 });
+
+// Rotas de usuário
+// - /api/usuarios/login     → emite access token (corpo) e refresh em cookie HttpOnly
+// - /api/usuarios/refresh   → lê/rotaciona refresh do cookie e devolve novo access
+// - /api/usuarios/register  → cria usuário + já autentica
+// - /api/usuarios/logout    → apaga cookie do refresh
+app.use("/api/usuarios", usuariosRouter);
 
 app.use("/api/chamados", chamadosRouter);
 
