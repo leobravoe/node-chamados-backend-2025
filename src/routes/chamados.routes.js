@@ -55,61 +55,88 @@ router.get("/:id", async (req, res) => {
 
 // Rota POST /api/chamados
 router.post("/", upload.single("imagem"), async (req, res) => {
+    // Extrai do corpo os campos esperados; se req.body vier undefined, usa objeto vazio
     const { texto, estado } = req.body ?? {};
 
-    // Pego o ID do usuário logado
-    const uid = req.user.id;
+    // ID do usuário autenticado, preenchido previamente pelo authMiddleware (req.user)
+    const uid = req.user?.id;
+
+    // Estado padrão: se não vier no corpo, assume "a" (aberto)
     const est = estado ?? "a";
-    // Configura a url da imagem
+
+    // Se um arquivo foi enviado no campo "imagem", monta a URL pública para acessá-lo;
+    // caso contrário, mantém null
     const url_imagem = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
 
+    // Validações mínimas: texto precisa ser string não vazia
     const temTextoValido = typeof texto === "string" && texto.trim() !== "";
+    // Estado precisa ser "a" (aberto) ou "f" (fechado)
     const temEstadoValido = (est === "a" || est === "f");
 
+    // Se falhar alguma validação, apaga o arquivo salvo (se houver) e retorna 400
     if (!temTextoValido || !temEstadoValido) {
-        if(req.file?.path) await unlink(req.file?.path);
+        if (req.file?.path) await unlink(req.file?.path);
         return res.status(400).json({
             erro:
-                "Campos obrigatórios: Usuarios_id (inteiro>0), texto (string) e estado ('a' ou 'f' — se ausente, assume 'a')",
+                "Campos obrigatórios: texto (string) e estado ('a' ou 'f' — se ausente, assume 'a')",
         });
     }
 
     try {
+        // Insere o chamado no banco, vinculando ao usuário autenticado (uid)
+        // e salvando texto, estado e URL da imagem (ou null)
         const { rows } = await pool.query(
             `INSERT INTO "Chamados" ("Usuarios_id", "texto", "estado", "url_imagem")
              VALUES ($1, $2, $3, $4)
              RETURNING *`,
             [uid, texto.trim(), est, url_imagem]
         );
+
+        // Retorna o registro recém-criado com status 201 (Created)
         res.status(201).json(rows[0]);
     } catch {
-        if(req.file?.path) await unlink(req.file?.path);
+        // Em caso de erro no banco, remove o arquivo salvo para não deixar lixo
+        if (req.file?.path) await unlink(req.file?.path);
+        // Retorna erro genérico de servidor
         res.status(500).json({ erro: "erro interno" });
     }
 });
 
+// Rota PUT /api/chamados/1
 router.put("/:id", async (req, res) => {
+    // Converte o parâmetro de rota "id" para número (ex.: "/api/chamados/1")
     const id = Number(req.params.id);
-    const { texto, estado } = req.body ?? {};
 
+    // Extrai os campos obrigatórios do corpo; se req.body vier undefined, usa objeto vazio
+    const { texto, estado, url_imagem } = req.body ?? {};
+
+    // ID do usuário autenticado (preenchido pelo authMiddleware em req.user)
+    const uid = req.user?.id;
+
+    // Flag de autorização: considera admin quando papel == 1
+    const isAdmin = req.user?.papel == 1;
+
+    // Validação do parâmetro: precisa ser inteiro positivo
     if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ erro: "id inválido" });
     }
-    // Pegar o id do usuário logado
-    const uid = req.user.id;
-    // Saber se é ou não Admin
-    const isAdmin = req.user.papel == "1";
 
+    // Validações do corpo para PUT (substituição completa dos campos principais)
     const temTextoValido = typeof texto === "string" && texto.trim() !== "";
     const temEstadoValido = (estado === "a" || estado === "f");
 
+    // PUT exige enviar todos os campos obrigatórios (texto e estado); imagem é opcional
     if (!temTextoValido || !temEstadoValido) {
         return res.status(400).json({
-            erro: "Para PUT, envie todos os campos: Usuarios_id (inteiro>0), texto (string), estado ('a' | 'f') e url_imagem (opcional)",
+            erro: "Para PUT, envie todos os campos: texto (string), estado ('a' | 'f') e imagem (opcional)",
         });
     }
 
     try {
+        // Atualiza o chamado:
+        // - define texto, estado e url_imagem (ou null se ausente)
+        // - marca data_atualizacao = now()
+        // - restringe a atualização ao dono do registro (Usuarios_id = uid) OU a administradores
         const { rows } = await pool.query(
             `UPDATE "Chamados"
                  SET "texto"       = $1,
@@ -117,27 +144,42 @@ router.put("/:id", async (req, res) => {
                      "url_imagem"   = $3,
                      "data_atualizacao" = now()
              WHERE "id" = $4 and
-                  ("Usuarios_id" = $5 or $6 )
+                  ("Usuarios_id" = $5 or $6)
              RETURNING *`,
-            [texto.trim(), estado, null, id, uid, isAdmin]
+            [texto.trim(), estado, url_imagem ?? null, id, uid, isAdmin]
         );
+
+        // Se nenhum registro foi atualizado, retorna 404 (não encontrado ou sem permissão)
         if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
+
+        // Retorna o registro atualizado
         res.json(rows[0]);
     } catch {
+        // Em qualquer erro de banco/servidor, responde com 500 genérico
         res.status(500).json({ erro: "erro interno" });
     }
 });
 
+// Rota PATCH /api/chamados/1
 router.patch("/:id", async (req, res) => {
+    // Converte o parâmetro de rota para número (ex.: "/api/chamados/1")
     const id = Number(req.params.id);
-    const { Usuarios_id, texto, estado, url_imagem } = req.body ?? {};
 
+    // Extrai os campos opcionais do corpo; se req.body vier undefined, usa {}
+    const { texto, estado, url_imagem } = req.body ?? {};
+
+    // ID do usuário autenticado (preenchido pelo authMiddleware em req.user)
+    const uid = req.user?.id;
+    // Flag de autorização: considera admin quando papel == 1
+    const isAdmin = req.user?.papel == 1;
+
+    // Validação do parâmetro: precisa ser inteiro positivo
     if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ erro: "id inválido" });
     }
 
+    // Para PATCH, exige pelo menos um campo a atualizar
     if (
-        Usuarios_id === undefined &&
         texto === undefined &&
         estado === undefined &&
         url_imagem === undefined
@@ -145,14 +187,7 @@ router.patch("/:id", async (req, res) => {
         return res.status(400).json({ erro: "envie ao menos um campo para atualizar" });
     }
 
-    let uid = null;
-    if (Usuarios_id !== undefined) {
-        uid = Number(Usuarios_id);
-        if (!Number.isInteger(uid) || uid <= 0) {
-            return res.status(400).json({ erro: "Usuarios_id deve ser inteiro > 0" });
-        }
-    }
-
+    // Se "texto" foi enviado, valida que é string não vazia; guarda versão aparada
     let novoTexto = null;
     if (texto !== undefined) {
         if (typeof texto !== "string" || texto.trim() === "") {
@@ -161,6 +196,7 @@ router.patch("/:id", async (req, res) => {
         novoTexto = texto.trim();
     }
 
+    // Se "estado" foi enviado, valida que é "a" (aberto) ou "f" (fechado)
     let novoEstado = null;
     if (estado !== undefined) {
         if (!(estado === "a" || estado === "f")) {
@@ -169,42 +205,123 @@ router.patch("/:id", async (req, res) => {
         novoEstado = estado;
     }
 
+    // Se "url_imagem" não foi enviado, mantém null para não alterar; se foi, usa o valor informado
     const novaUrl = url_imagem === undefined ? null : url_imagem;
 
     try {
+        // Atualiza apenas os campos enviados:
+        // - COALESCE($1, "texto") mantém o valor atual quando $1 é null (campo não enviado)
+        // - idem para "estado" e "url_imagem"
+        // - data_atualizacao recebe now()
+        // Regra de autorização: só permite quando o registro é do usuário (Usuarios_id = uid) OU o usuário é admin
         const { rows } = await pool.query(
             `UPDATE "Chamados"
-                 SET "Usuarios_id"      = COALESCE($1, "Usuarios_id"),
-                     "texto"            = COALESCE($2, "texto"),
-                     "estado"           = COALESCE($3, "estado"),
-                     "url_imagem"       = COALESCE($4, "url_imagem"),
+                 SET "texto"            = COALESCE($1, "texto"),
+                     "estado"           = COALESCE($2, "estado"),
+                     "url_imagem"       = COALESCE($3, "url_imagem"),
                      "data_atualizacao" = now()
-             WHERE "id" = $5
+             WHERE "id" = $4 and
+                  ("Usuarios_id" = $5 or $6)
              RETURNING *`,
-            [uid, novoTexto, novoEstado, novaUrl, id]
+            [novoTexto, novoEstado, novaUrl, id, uid, isAdmin]
         );
+
+        // Se nenhum registro foi atualizado, pode ser inexistente ou sem permissão → 404
         if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
+
+        // Retorna o registro atualizado
         res.json(rows[0]);
     } catch {
+        // Em erro inesperado (banco/servidor), responde 500
         res.status(500).json({ erro: "erro interno" });
     }
 });
 
-router.delete("/:id", async (req, res) => {
+// Rota PATCH /api/chamados/1
+router.patch("/:id", async (req, res) => {
+    // Converte o parâmetro de rota para número (ex.: "/api/chamados/1")
+    // Obs.: Number("abc") vira NaN, então a validação abaixo barra entradas inválidas.
     const id = Number(req.params.id);
 
+    // Extrai os campos opcionais do corpo; se req.body vier undefined, usa {}
+    // PATCH = atualização parcial: qualquer um dos campos pode ser omitido.
+    const { texto, estado, url_imagem } = req.body ?? {};
+
+    // ID do usuário autenticado (preenchido pelo authMiddleware em req.user)
+    // Este valor é usado para verificar se o recurso pertence ao usuário.
+    const uid = req.user?.id;
+    // Flag de autorização: considera admin quando papel == 1
+    // Admin pode editar qualquer chamado; usuários comuns apenas os próprios.
+    const isAdmin = req.user?.papel == 1;
+
+    // Validação do parâmetro: precisa ser inteiro positivo
     if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ erro: "id inválido" });
     }
 
+    // Para PATCH, exige pelo menos um campo a atualizar
+    // (Evita requisições vazias que não alterariam nada.)
+    if (
+        texto === undefined &&
+        estado === undefined &&
+        url_imagem === undefined
+    ) {
+        return res.status(400).json({ erro: "envie ao menos um campo para atualizar" });
+    }
+
+    // Se "texto" foi enviado, valida que é string não vazia; guarda versão aparada
+    let novoTexto = null;
+    if (texto !== undefined) {
+        if (typeof texto !== "string" || texto.trim() === "") {
+            return res.status(400).json({ erro: "texto deve ser string não vazia" });
+        }
+        // Mantém somente espaços internos relevantes
+        novoTexto = texto.trim();
+    }
+
+    // Se "estado" foi enviado, valida que é "a" (aberto) ou "f" (fechado)
+    let novoEstado = null;
+    if (estado !== undefined) {
+        if (!(estado === "a" || estado === "f")) {
+            return res.status(400).json({ erro: "estado deve ser 'a' ou 'f'" });
+        }
+        novoEstado = estado;
+    }
+
+    // Se "url_imagem" não foi enviado (undefined), o campo não deve mudar → passa null
+    // Se foi enviado (mesmo que null/""), usa o valor informado.
+    const novaUrl = url_imagem === undefined ? null : url_imagem;
+
     try {
-        const r = await pool.query(
-            `DELETE FROM "Chamados" WHERE "id" = $1 RETURNING "id"`,
-            [id]
+        // Atualiza apenas os campos enviados:
+        // - COALESCE($1, "texto") usa $1 quando não é null; caso seja null, preserva o valor atual.
+        // - Mesma ideia para "estado" e "url_imagem".
+        // - data_atualizacao recebe now() para rastrear a última modificação.
+        // Regra de autorização:
+        //   WHERE "id" = $4 AND ("Usuarios_id" = $5 OR $6)
+        //   → permite quando o chamado é do próprio usuário (Usuarios_id = uid) OU quando isAdmin = true.
+        // Observação de segurança: uso de placeholders ($1...$6) previne SQL injection.
+        const { rows } = await pool.query(
+            `UPDATE "Chamados"
+                 SET "texto"            = COALESCE($1, "texto"),
+                     "estado"           = COALESCE($2, "estado"),
+                     "url_imagem"       = COALESCE($3, "url_imagem"),
+                     "data_atualizacao" = now()
+             WHERE "id" = $4 and
+                  ("Usuarios_id" = $5 or $6)
+             RETURNING *`,
+            [novoTexto, novoEstado, novaUrl, id, uid, isAdmin]
         );
-        if (!r.rowCount) return res.status(404).json({ erro: "não encontrado" });
-        res.status(204).end();
+
+        // Se nenhum registro foi atualizado:
+        // - o id pode não existir, ou
+        // - o usuário não é dono e também não é admin (falha de autorização).
+        if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
+
+        // Sucesso: devolve o registro atualizado
+        res.json(rows[0]);
     } catch {
+        // Em erro inesperado (banco/servidor), responde 500
         res.status(500).json({ erro: "erro interno" });
     }
 });

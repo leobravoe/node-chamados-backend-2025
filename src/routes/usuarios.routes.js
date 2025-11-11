@@ -1,3 +1,12 @@
+// src/routes/usuarios.routes.js
+// ------------------------------------------------------------------------------------------
+// Rotas de autenticação e registro de usuários usando JWT.
+// - Access token (curto) vai no corpo da resposta e é usado pelo front no header Authorization.
+// - Refresh token (longo) é guardado em cookie HttpOnly para rotação silenciosa de sessão.
+// - Nenhum estado de sessão no servidor: validação por assinatura (stateless).
+// Requer no .env: JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, JWT_ACCESS_EXPIRES, JWT_REFRESH_EXPIRES.
+// ------------------------------------------------------------------------------------------
+
 import { Router } from "express";         // Router do Express para definir as rotas deste módulo
 import jwt from "jsonwebtoken";           // Biblioteca para assinar/verificar JSON Web Tokens (JWT)
 import bcrypt from "bcryptjs";            // Biblioteca para hashing e verificação de senha
@@ -50,60 +59,14 @@ function cookieOpts(req) {
     maxAge: REFRESH_MAX_AGE,
   };
 }
-
 function setRefreshCookie(res, req, token) {
   // Grava o refresh token em cookie HttpOnly com as opções acima
   res.cookie(REFRESH_COOKIE, token, cookieOpts(req));
 }
-
 function clearRefreshCookie(res, req) {
   // Remove o cookie de refresh (logout ou refresh inválido)
   res.clearCookie(REFRESH_COOKIE, cookieOpts(req));
 }
-
-router.post("/register", async (req, res) => {
-  // Cadastro simples:
-  // 1) valida campos mínimos;
-  // 2) gera hash da senha;
-  // 3) insere usuário como papel padrão (0);
-  // 4) emite access + refresh e grava o refresh em cookie HttpOnly.
-  const { nome, email, senha } = req.body ?? {};
-  if (!nome || !email || !senha) {
-    return res.status(400).json({ erro: "nome, email e senha são obrigatórios" });
-  }
-  // regra de negócio
-  if (String(senha).length < 6) {
-    return res.status(400).json({ erro: "senha deve ter pelo menos 6 caracteres" });
-  }
-
-  try {
-    const senha_hash = await bcrypt.hash(senha, 12); // custo 12: equilibrado entre segurança e performance
-    const papel = 0;
-
-    const r = await pool.query(
-      `INSERT INTO "Usuarios" ("nome","email","senha_hash","papel")
-       VALUES ($1,$2,$3,$4)
-       RETURNING "id","nome","email","papel"`,
-      [String(nome).trim(), String(email).trim().toLowerCase(), senha_hash, papel]
-    );
-    const u = r.rows[0];
-
-    const access_token = signAccessToken(u);
-    const refresh_token = signRefreshToken(u);
-    setRefreshCookie(res, req, refresh_token);
-
-    return res.status(201).json({
-      token_type: "Bearer",
-      access_token,
-      expires_in: JWT_ACCESS_EXPIRES,
-      user: { id: u.id, nome: u.nome, email: u.email, papel: u.papel },
-    });
-  } catch (err) {
-    // Código 23505 (Postgres) indica violação de UNIQUE (e.g. email já cadastrado)
-    if (err?.code === "23505") return res.status(409).json({ erro: "email já cadastrado" });
-    return res.status(500).json({ erro: "erro interno" });
-  }
-});
 
 router.post("/login", async (req, res) => {
   // Autentica por email/senha:
@@ -137,12 +100,6 @@ router.post("/login", async (req, res) => {
   } catch {
     return res.status(500).json({ erro: "erro interno" });
   }
-});
-
-router.post("/logout", async (req, res) => {
-  // “Logout” stateless: apenas remove o cookie de refresh no cliente
-  clearRefreshCookie(res, req);
-  return res.status(204).end();
 });
 
 router.post("/refresh", async (req, res) => {
@@ -179,6 +136,55 @@ router.post("/refresh", async (req, res) => {
     clearRefreshCookie(res, req);
     return res.status(401).json({ erro: "refresh inválido ou expirado" });
   }
+});
+
+router.post("/register", async (req, res) => {
+  // Cadastro simples:
+  // 1) valida campos mínimos;
+  // 2) gera hash da senha;
+  // 3) insere usuário como papel padrão (0);
+  // 4) emite access + refresh e grava o refresh em cookie HttpOnly.
+  const { nome, email, senha } = req.body ?? {};
+  if (!nome || !email || !senha) {
+    return res.status(400).json({ erro: "nome, email e senha são obrigatórios" });
+  }
+  if (String(senha).length < 6) {
+    return res.status(400).json({ erro: "senha deve ter pelo menos 6 caracteres" });
+  }
+
+  try {
+    const senha_hash = await bcrypt.hash(senha, 12); // custo 12: equilibrado entre segurança e performance
+    const papel = 0;
+
+    const r = await pool.query(
+      `INSERT INTO "Usuarios" ("nome","email","senha_hash","papel")
+       VALUES ($1,$2,$3,$4)
+       RETURNING "id","nome","email","papel"`,
+      [String(nome).trim(), String(email).trim().toLowerCase(), senha_hash, papel]
+    );
+    const u = r.rows[0];
+
+    const access_token = signAccessToken(u);
+    const refresh_token = signRefreshToken(u);
+    setRefreshCookie(res, req, refresh_token);
+
+    return res.status(201).json({
+      token_type: "Bearer",
+      access_token,
+      expires_in: JWT_ACCESS_EXPIRES,
+      user: { id: u.id, nome: u.nome, email: u.email, papel: u.papel },
+    });
+  } catch (err) {
+    // Código 23505 (Postgres) indica violação de UNIQUE (e.g. email já cadastrado)
+    if (err?.code === "23505") return res.status(409).json({ erro: "email já cadastrado" });
+    return res.status(500).json({ erro: "erro interno" });
+  }
+});
+
+router.post("/logout", async (req, res) => {
+  // “Logout” stateless: apenas remove o cookie de refresh no cliente
+  clearRefreshCookie(res, req);
+  return res.status(204).end();
 });
 
 export default router;              // Exporta o roteador para ser montado no servidor principal
