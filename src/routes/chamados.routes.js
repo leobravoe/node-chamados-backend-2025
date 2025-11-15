@@ -21,7 +21,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Rota /api/chamados
+// Rota GET /api/chamados
 router.get("/", async (_req, res) => {
     try {
         const { rows } = await pool.query(
@@ -33,7 +33,7 @@ router.get("/", async (_req, res) => {
     }
 });
 
-// Rota /api/chamados/1
+// Rota GET /api/chamados/1
 router.get("/:id", async (req, res) => {
     const id = Number(req.params.id);
 

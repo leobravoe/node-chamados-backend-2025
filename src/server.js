@@ -45,32 +45,36 @@ app.use('/uploads', express.static('./uploads'));
 // Rota índice apenas para documentação rápida das rotas de chamados
 app.get("/", (_req, res) => {
     res.json({
-        LISTAR: "GET /api/chamados",
-        MOSTRAR: "GET /api/chamados/:id",
-        CRIAR: "POST /api/chamados          BODY: { texto:  'string', estado?: 'a'|'f', imagem?: imagem }",
-        SUBSTITUIR: "PUT /api/chamados/:id  BODY: { texto:  'string',  estado: 'a'|'f', imagem?: imagem }",
-        ATUALIZAR: "PATCH /api/chamados/:id BODY: { texto?: 'string', estado?: 'a'|'f', imagem?: imagem }",
-        DELETAR: "DELETE /api/chamados/:id",
+        "server online"
     });
 });
 
 // Rotas de usuário
-// - /api/usuarios/login     → emite access token (corpo) e refresh em cookie HttpOnly
-// - /api/usuarios/refresh   → lê/rotaciona refresh do cookie e devolve novo access
-// - /api/usuarios/register  → cria usuário + já autentica
-// - /api/usuarios/logout    → apaga cookie do refresh
+// POST /api/usuarios/login     → emite access token (corpo) e refresh em cookie HttpOnly
+// POST /api/usuarios/refresh   → lê/rotaciona refresh do cookie e devolve novo access
+// POST /api/usuarios/register  → cria usuário + já autentica
+// POST /api/usuarios/logout    → apaga cookie do refresh
 app.use("/api/usuarios", usuariosRouter);
 
 // Rotas de chamados protegidas
 // - Aplica o authMiddleware antes do router: exige Authorization: Bearer <access_token>
 // - O middleware popula req.user (id, papel, nome) para uso nas rotas de chamados.
+// GET /api/chamados
+// GET /api/chamados/1
+// POST /api/chamados
+// PUT /api/chamados/1
+// PATCH /api/chamados/1
+// DELETE /api/chamados/1
 app.use("/api/chamados", authMiddleware, chamadosRouter);
 
 // Porta do servidor (usa PORT do .env se existir; senão, 3000)
 const PORT = process.env.PORT || 3000;
 
 // Sobe o servidor HTTP e loga informações úteis no console
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Servidor rodando em http://localhost:${PORT}`);
     console.log("CORS configurado: permissivo (aceita qualquer origem).");
 });
+
+server.keepAliveTimeout = 120 * 1000;
+server.headersTimeout = 120 * 1000;
