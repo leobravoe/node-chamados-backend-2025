@@ -45,7 +45,7 @@ app.use('/uploads', express.static('./uploads'));
 // Rota índice apenas para documentação rápida das rotas de chamados
 app.get("/", (_req, res) => {
     res.json({
-        "server online"
+        "status": "server online"
     });
 });
 
