@@ -39,7 +39,7 @@ app.use(cookieParser());
 // Quando isso está ativo, o CORS não pode usar *, por isso o “espelho” do origin: true é útil. 
 // No front, lembre de incluir credenciais: fetch(url, { credentials: "include" }) ou 
 // axios.get(url, { withCredentials: true }).
-app.use(cors( {origin: true, credentials: true} ));
+app.use(cors({ origin: true, credentials: true }));
 
 // armazenamento de arquivos enviados (pasta na raiz /uploads)
 // Observação: o Express serve os arquivos como estáticos; a URL pública fica /uploads/<arquivo>.
@@ -73,9 +73,13 @@ app.use("/api/chamados", authMiddleware, chamadosRouter);
 // Porta do servidor (usa PORT do .env se existir; senão, 3000)
 const PORT = process.env.PORT || 3000;
 
+// No Render essa env vem pronta, tipo: "https://node-chamados-backend-2025.onrender.com"
+const externalUrl = process.env.RENDER_EXTERNAL_URL;
+
 // Sobe o servidor HTTP e loga informações úteis no console
 const server = app.listen(PORT, () => {
-    console.log(`Servidor rodando em http://localhost:${PORT}`);
+    const baseUrl = externalUrl || `http://localhost:${PORT}`;
+    console.log(`Servidor rodando em ${baseUrl}`);
     console.log("CORS configurado: permissivo (aceita qualquer origem).");
 });
 
