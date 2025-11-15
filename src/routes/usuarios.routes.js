@@ -23,6 +23,8 @@ const {
     JWT_REFRESH_EXPIRES = "7d",             // Tempo de vida do refresh token (ex.: "7d")
 } = process.env;
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const REFRESH_COOKIE = "refresh_token";           // Nome fixo do cookie HttpOnly que guarda o refresh
 // 7 dias em ms (simples e suficiente; não depende de novas envs)
 const REFRESH_MAX_AGE = 7 * 24 * 60 * 60 * 1000;  // Max-Age do cookie para alinhamento aproximado
@@ -48,7 +50,7 @@ function cookieOpts(req) {
     return {
         httpOnly: true,
         sameSite: "Lax",
-        secure: false,            // simples: HTTP em dev; quando for subir HTTPS, troque para true
+        secure: isProduction,            // simples: HTTP em dev; quando for subir HTTPS, troque para true
         // Path define o prefixo de URL no qual o navegador anexa o cookie. 
         // Em Express, req.baseUrl é o caminho onde esse router foi montado; 
         // usar path: req.baseUrl faz o cookie só ir para as rotas desse módulo. 

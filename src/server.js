@@ -20,6 +20,9 @@ import { authMiddleware } from "./middlewares/auth.js";    // Middleware de aute
 dotenv.config();                         // Torna disponíveis as variáveis do .env em process.env
 const app = express();                   // Cria a aplicação Express
 
+// MUITO IMPORTANTE para apps atrás de proxy (Render, Heroku, etc.)
+app.set("trust proxy", 1);
+
 // Ela faz o Express ler o corpo JSON da requisição e colocar o resultado pronto em req.body. 
 // Sem isso, req.body fica vazio.
 app.use(express.json());
