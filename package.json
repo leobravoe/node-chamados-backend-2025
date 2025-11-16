@@ -1,7 +1,7 @@
 {
   "name": "desenvovimento-web-2025",
   "version": "1.0.0",
-  "description": "<!-- Escreva o problema sem falar de telas/tecnologias.\r      Responda: Quem sofre? Onde? O que atrapalha? Por que isso importa?\r      EXEMPLO: Em aulas práticas, alunos esperam muito para serem atendidos.\r      Há filas confusas e frustração. O professor não vê ordem nem tempo de espera.\r      Objetivo inicial: organizar a fila para reduzir a espera e garantir justiça. -->\r - Em aulas práticas, alunos esperam muito para serem atendidos.\r - Há filas confusas e frustração. O professor não vê ordem nem tempo de espera.\r - Objetivo inicial: organizar a fila para reduzir a espera e garantir justiça",
+  "description": "AtendeAí - Organize a fila de atendimento em aulas práticas",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -14,8 +14,8 @@
     "type": "git",
     "url": "git+https://github.com/leobravoe/desenvovimento-web-2025.git"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Leonardo Bravo Estácio",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/leobravoe/desenvovimento-web-2025/issues"
   },
