@@ -198,7 +198,7 @@ router.put("/:id", upload.single("imagem"), async (req, res) => {
     if (!temTextoValido || !temEstadoValido) {
         return res.status(400).json({
             erro:
-                "Para PUT, envie todos os campos: texto (string não vazia), estado ('a' | 'f') e imagem (opcional)",
+                "Para PUT, envie texto (string não vazia) e estado ('a' | 'f'); imagem é opcional.",
         });
     }
 
@@ -206,6 +206,7 @@ router.put("/:id", upload.single("imagem"), async (req, res) => {
     let urlImagemAntiga = null;
 
     try {
+        // 1) Busca chamado e valida permissão
         const chamado = await obterChamadoPorId(id);
         if (!chamado) {
             return res.status(404).json({ erro: "não encontrado" });
@@ -216,12 +217,16 @@ router.put("/:id", upload.single("imagem"), async (req, res) => {
 
         urlImagemAntiga = chamado.url_imagem;
 
+        // 2) Decide nova URL da imagem:
+        //    - Se veio arquivo → salvar e usar nova URL;
+        //    - Se NÃO veio arquivo → mantém a imagem antiga.
         if (req.file) {
             urlImagemNova = await salvarUploadEmDisco(req, req.file);
         } else {
-            urlImagemNova = null; // PUT sem imagem => remove imagem
+            urlImagemNova = urlImagemAntiga; // mantém a existente
         }
 
+        // 3) Atualiza texto, estado e url_imagem
         const { rows } = await pool.query(
             `UPDATE "Chamados"
        SET "texto"            = $1,
@@ -234,20 +239,26 @@ router.put("/:id", upload.single("imagem"), async (req, res) => {
         );
 
         if (!rows[0]) {
-            if (urlImagemNova) {
+            // Muito improvável (apagado entre SELECT e UPDATE)
+            if (req.file && urlImagemNova) {
                 await removerArquivoPorUrl(urlImagemNova);
             }
             return res.status(404).json({ erro: "não encontrado" });
         }
 
-        // Remove imagem antiga se mudou (inclusive se a nova é null)
-        if (urlImagemAntiga && urlImagemAntiga !== urlImagemNova) {
+        // 4) Se trocou a imagem (tinha antiga e agora é outra), remove a antiga
+        if (
+            req.file &&               // só faz sentido se mandou nova
+            urlImagemAntiga &&        // existia antiga
+            urlImagemAntiga !== urlImagemNova
+        ) {
             await removerArquivoPorUrl(urlImagemAntiga);
         }
 
         res.json(rows[0]);
     } catch {
-        if (urlImagemNova) {
+        // Se falhou depois de criar nova imagem, remove a nova pra não deixar lixo
+        if (req.file && urlImagemNova) {
             await removerArquivoPorUrl(urlImagemNova);
         }
         res.status(500).json({ erro: "erro interno" });
