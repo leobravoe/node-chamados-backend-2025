@@ -232,8 +232,8 @@ router.post("/", upload.single("imagem"), async (req, res) => {
         // Insere o novo chamado no banco. "Usuarios_id" recebe o id do usuário logado.
         const { rows } = await pool.query(
             `INSERT INTO "Chamados" ("Usuarios_id", "texto", "estado", "url_imagem")
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
+             VALUES ($1, $2, $3, $4)
+             RETURNING *`,
             [uid, texto.trim(), est, urlImagem]
         );
 
@@ -310,12 +310,12 @@ router.put("/:id", upload.single("imagem"), async (req, res) => {
         // 3) Atualiza texto, estado e url_imagem
         const { rows } = await pool.query(
             `UPDATE "Chamados"
-       SET "texto"            = $1,
-           "estado"           = $2,
-           "url_imagem"       = $3,
-           "data_atualizacao" = now()
-       WHERE "id" = $4
-       RETURNING *`,
+             SET "texto"            = $1,
+                 "estado"           = $2,
+                 "url_imagem"       = $3,
+                 "data_atualizacao" = now()
+             WHERE "id" = $4
+             RETURNING *`,
             [texto.trim(), estado, urlImagemNova, id]
         );
 
@@ -452,12 +452,12 @@ router.patch("/:id", upload.single("imagem"), async (req, res) => {
         // Atualiza no banco apenas com os valores finais decididos.
         const { rows } = await pool.query(
             `UPDATE "Chamados"
-       SET "texto"            = $1,
-           "estado"           = $2,
-           "url_imagem"       = $3,
-           "data_atualizacao" = now()
-       WHERE "id" = $4
-       RETURNING *`,
+             SET "texto"            = $1,
+                 "estado"           = $2,
+                 "url_imagem"       = $3,
+                 "data_atualizacao" = now()
+             WHERE "id" = $4
+             RETURNING *`,
             [textoFinal, estadoFinal, urlImagemNova, id]
         );
 
