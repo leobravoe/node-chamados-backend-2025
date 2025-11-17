@@ -1,27 +1,102 @@
 // src/routes/chamados.routes.js
 import { Router } from "express";
-import { unlink } from 'node:fs/promises'; // unlink do fs para apagar arquivo
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { writeFile, unlink } from "node:fs/promises";
 import { pool } from "../database/db.js";
-import multer from "multer"; // import do multer
-import path from "path";     // import do path
-import fs from "fs";         // import do fs
 
 const router = Router();
 
-// setup mínimo de upload em disco
-const uploadDir = path.resolve('uploads');
+// -----------------------------------------------------------------------------
+// Configuração de uploads (diretório + helpers)
+// -----------------------------------------------------------------------------
+const uploadDir = path.resolve("uploads");
 fs.mkdirSync(uploadDir, { recursive: true });
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
-  }
-});
-const upload = multer({ storage });
+const ESTADOS_VALIDOS = new Set(["a", "f"]);
 
-// Rota GET /api/chamados
+function parseIdParam(param) {
+    const id = Number(param);
+    return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function isEstadoValido(estado) {
+    return ESTADOS_VALIDOS.has(estado);
+}
+
+function gerarNomeArquivo(originalname) {
+    const ext = path.extname(originalname).toLowerCase();
+    return `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+}
+
+// Monta URL completa para o arquivo, ex: http://localhost:3000/uploads/arquivo.png
+function montarUrlCompleta(req, filename) {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    return `${baseUrl}/uploads/${filename}`;
+}
+
+// Salva o buffer do arquivo em disco e retorna a URL completa
+async function salvarUploadEmDisco(req, file) {
+    if (!file) return null;
+
+    const filename = gerarNomeArquivo(file.originalname);
+    const filePath = path.join(uploadDir, filename);
+
+    await writeFile(filePath, file.buffer);
+
+    return montarUrlCompleta(req, filename);
+}
+
+// Remove arquivo a partir de uma URL ABSOLUTA salva no banco
+// Ex: https://meudominio.com/uploads/arquivo.png
+async function removerArquivoPorUrl(url_imagem) {
+    if (!url_imagem) return;
+
+    try {
+        const { pathname } = new URL(url_imagem); // ex: /uploads/arquivo.png
+        const filename = path.basename(pathname);
+        const filePath = path.join(uploadDir, filename);
+        await unlink(filePath);
+    } catch {
+        // URL malformada ou arquivo já não existe: ignorar
+    }
+}
+
+// Helper para obter auth de forma padronizada
+function getAuthInfo(req, res) {
+    const uid = req.user?.id;
+    const isAdmin = req.user?.papel === 1;
+    if (!uid) {
+        res.status(401).json({ erro: "não autenticado" });
+        return null;
+    }
+    return { uid, isAdmin };
+}
+
+// Helper para carregar um chamado por ID
+async function obterChamadoPorId(id) {
+    const { rows } = await pool.query(
+        `SELECT * FROM "Chamados" WHERE "id" = $1`,
+        [id]
+    );
+    return rows[0] ?? null;
+}
+
+// -----------------------------------------------------------------------------
+// Multer usando memória (arquivo só vai pro disco depois de validar tudo)
+// -----------------------------------------------------------------------------
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB (ajuste conforme sua necessidade)
+    },
+});
+
+// -----------------------------------------------------------------------------
+// GET /api/chamados
+// Lista todos os chamados
+// -----------------------------------------------------------------------------
 router.get("/", async (_req, res) => {
     try {
         const { rows } = await pool.query(
@@ -33,232 +108,301 @@ router.get("/", async (_req, res) => {
     }
 });
 
-// Rota GET /api/chamados/1
+// -----------------------------------------------------------------------------
+// GET /api/chamados/:id
+// Busca um chamado específico
+// -----------------------------------------------------------------------------
 router.get("/:id", async (req, res) => {
-    const id = Number(req.params.id);
-
-    if (!Number.isInteger(id) || id <= 0) {
+    const id = parseIdParam(req.params.id);
+    if (!id) {
         return res.status(400).json({ erro: "id inválido" });
     }
 
     try {
-        const { rows } = await pool.query(
-            `SELECT * FROM "Chamados" WHERE "id" = $1`,
-            [id]
-        );
-        if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
-        res.json(rows[0]);
+        const chamado = await obterChamadoPorId(id);
+        if (!chamado) return res.status(404).json({ erro: "não encontrado" });
+        res.json(chamado);
     } catch {
         res.status(500).json({ erro: "erro interno" });
     }
 });
 
-// Rota POST /api/chamados
+// -----------------------------------------------------------------------------
+// POST /api/chamados
+// Cria chamado (texto, estado ["a"/"f"], imagem opcional).
+// Salva url_imagem como URL COMPLETA no banco.
+// -----------------------------------------------------------------------------
 router.post("/", upload.single("imagem"), async (req, res) => {
-    // Extrai do corpo os campos esperados; se req.body vier undefined, usa objeto vazio
+    const auth = getAuthInfo(req, res);
+    if (!auth) return;
+    const { uid } = auth;
+
     const { texto, estado } = req.body ?? {};
+    const est = estado ?? "a"; // padrão: aberto
 
-    // ID do usuário autenticado, preenchido previamente pelo authMiddleware (req.user)
-    const uid = req.user?.id;
-
-    // Estado padrão: se não vier no corpo, assume "a" (aberto)
-    const est = estado ?? "a";
-
-    // Se um arquivo foi enviado no campo "imagem", monta a URL pública para acessá-lo;
-    // caso contrário, mantém null
-    const url_imagem = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
-
-    // Validações mínimas: texto precisa ser string não vazia
     const temTextoValido = typeof texto === "string" && texto.trim() !== "";
-    // Estado precisa ser "a" (aberto) ou "f" (fechado)
-    const temEstadoValido = (est === "a" || est === "f");
+    const temEstadoValido = isEstadoValido(est);
 
-    // Se falhar alguma validação, apaga o arquivo salvo (se houver) e retorna 400
     if (!temTextoValido || !temEstadoValido) {
-        if (req.file?.path) await unlink(req.file?.path);
         return res.status(400).json({
             erro:
-                "Campos obrigatórios: texto (string) e estado ('a' ou 'f' — se ausente, assume 'a')",
+                "Campos obrigatórios: texto (string não vazia) e estado ('a' ou 'f' — se ausente, assume 'a')",
         });
     }
 
+    let urlImagem = null;
+
     try {
-        // Insere o chamado no banco, vinculando ao usuário autenticado (uid)
-        // e salvando texto, estado e URL da imagem (ou null)
+        if (req.file) {
+            urlImagem = await salvarUploadEmDisco(req, req.file);
+        }
+
         const { rows } = await pool.query(
             `INSERT INTO "Chamados" ("Usuarios_id", "texto", "estado", "url_imagem")
-             VALUES ($1, $2, $3, $4)
-             RETURNING *`,
-            [uid, texto.trim(), est, url_imagem]
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+            [uid, texto.trim(), est, urlImagem]
         );
 
-        // Retorna o registro recém-criado com status 201 (Created)
         res.status(201).json(rows[0]);
     } catch {
-        // Em caso de erro no banco, remove o arquivo salvo para não deixar lixo
-        if (req.file?.path) await unlink(req.file?.path);
-        // Retorna erro genérico de servidor
+        if (urlImagem) {
+            await removerArquivoPorUrl(urlImagem);
+        }
         res.status(500).json({ erro: "erro interno" });
     }
 });
 
-// Rota PUT /api/chamados/1
-router.put("/:id", async (req, res) => {
-    // Converte o parâmetro de rota "id" para número (ex.: "/api/chamados/1")
-    const id = Number(req.params.id);
-
-    // Extrai os campos obrigatórios do corpo; se req.body vier undefined, usa objeto vazio
-    const { texto, estado, url_imagem } = req.body ?? {};
-
-    // ID do usuário autenticado (preenchido pelo authMiddleware em req.user)
-    const uid = req.user?.id;
-
-    // Flag de autorização: considera admin quando papel == 1
-    const isAdmin = req.user?.papel == 1;
-
-    // Validação do parâmetro: precisa ser inteiro positivo
-    if (!Number.isInteger(id) || id <= 0) {
+// -----------------------------------------------------------------------------
+// PUT /api/chamados/:id
+// Atualização COMPLETA (texto, estado, imagem opcional).
+// Regras:
+//  - Se vier imagem nova → salva nova, faz UPDATE, depois remove a antiga.
+//  - Se não vier imagem → zera url_imagem e remove a antiga (se existir).
+// -----------------------------------------------------------------------------
+router.put("/:id", upload.single("imagem"), async (req, res) => {
+    const id = parseIdParam(req.params.id);
+    if (!id) {
         return res.status(400).json({ erro: "id inválido" });
     }
 
-    // Validações do corpo para PUT (substituição completa dos campos principais)
-    const temTextoValido = typeof texto === "string" && texto.trim() !== "";
-    const temEstadoValido = (estado === "a" || estado === "f");
+    const auth = getAuthInfo(req, res);
+    if (!auth) return;
+    const { uid, isAdmin } = auth;
 
-    // PUT exige enviar todos os campos obrigatórios (texto e estado); imagem é opcional
+    const { texto, estado } = req.body ?? {};
+
+    const temTextoValido = typeof texto === "string" && texto.trim() !== "";
+    const temEstadoValido = isEstadoValido(estado);
+
     if (!temTextoValido || !temEstadoValido) {
         return res.status(400).json({
-            erro: "Para PUT, envie todos os campos: texto (string), estado ('a' | 'f') e imagem (opcional)",
+            erro:
+                "Para PUT, envie todos os campos: texto (string não vazia), estado ('a' | 'f') e imagem (opcional)",
         });
     }
 
+    let urlImagemNova = null;
+    let urlImagemAntiga = null;
+
     try {
-        // Atualiza o chamado:
-        // - define texto, estado e url_imagem (ou null se ausente)
-        // - marca data_atualizacao = now()
-        // - restringe a atualização ao dono do registro (Usuarios_id = uid) OU a administradores
+        const chamado = await obterChamadoPorId(id);
+        if (!chamado) {
+            return res.status(404).json({ erro: "não encontrado" });
+        }
+        if (!isAdmin && chamado.Usuarios_id !== uid) {
+            return res.status(404).json({ erro: "não encontrado" });
+        }
+
+        urlImagemAntiga = chamado.url_imagem;
+
+        if (req.file) {
+            urlImagemNova = await salvarUploadEmDisco(req, req.file);
+        } else {
+            urlImagemNova = null; // PUT sem imagem => remove imagem
+        }
+
         const { rows } = await pool.query(
             `UPDATE "Chamados"
-                 SET "texto"       = $1,
-                     "estado"      = $2,
-                     "url_imagem"   = $3,
-                     "data_atualizacao" = now()
-             WHERE "id" = $4 and
-                  ("Usuarios_id" = $5 or $6)
-             RETURNING *`,
-            [texto.trim(), estado, url_imagem ?? null, id, uid, isAdmin]
+       SET "texto"            = $1,
+           "estado"           = $2,
+           "url_imagem"       = $3,
+           "data_atualizacao" = now()
+       WHERE "id" = $4
+       RETURNING *`,
+            [texto.trim(), estado, urlImagemNova, id]
         );
 
-        // Se nenhum registro foi atualizado, retorna 404 (não encontrado ou sem permissão)
-        if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
+        if (!rows[0]) {
+            if (urlImagemNova) {
+                await removerArquivoPorUrl(urlImagemNova);
+            }
+            return res.status(404).json({ erro: "não encontrado" });
+        }
 
-        // Retorna o registro atualizado
+        // Remove imagem antiga se mudou (inclusive se a nova é null)
+        if (urlImagemAntiga && urlImagemAntiga !== urlImagemNova) {
+            await removerArquivoPorUrl(urlImagemAntiga);
+        }
+
         res.json(rows[0]);
     } catch {
-        // Em qualquer erro de banco/servidor, responde com 500 genérico
+        if (urlImagemNova) {
+            await removerArquivoPorUrl(urlImagemNova);
+        }
         res.status(500).json({ erro: "erro interno" });
     }
 });
 
-// Rota PATCH /api/chamados/1
-router.patch("/:id", async (req, res) => {
-    // Converte o parâmetro de rota para número (ex.: "/api/chamados/1")
-    const id = Number(req.params.id);
-
-    // Extrai os campos opcionais do corpo; se req.body vier undefined, usa {}
-    const { texto, estado, url_imagem } = req.body ?? {};
-
-    // ID do usuário autenticado (preenchido pelo authMiddleware em req.user)
-    const uid = req.user?.id;
-    // Flag de autorização: considera admin quando papel == 1
-    const isAdmin = req.user?.papel == 1;
-
-    // Validação do parâmetro: precisa ser inteiro positivo
-    if (!Number.isInteger(id) || id <= 0) {
+// -----------------------------------------------------------------------------
+// PATCH /api/chamados/:id
+// Atualização PARCIAL (texto, estado e/ou imagem).
+// Regras para imagem:
+//  - Se enviar um arquivo novo → salva nova, faz UPDATE, depois remove a antiga.
+//  - Se enviar url_imagem = null (JSON) → seta url_imagem = null e apaga a antiga.
+//  - Se não enviar nada relativo à imagem → mantém imagem atual.
+// -----------------------------------------------------------------------------
+router.patch("/:id", upload.single("imagem"), async (req, res) => {
+    const id = parseIdParam(req.params.id);
+    if (!id) {
         return res.status(400).json({ erro: "id inválido" });
     }
 
-    // Para PATCH, exige pelo menos um campo a atualizar
-    if (
-        texto === undefined &&
-        estado === undefined &&
-        url_imagem === undefined
-    ) {
-        return res.status(400).json({ erro: "envie ao menos um campo para atualizar" });
+    const auth = getAuthInfo(req, res);
+    if (!auth) return;
+    const { uid, isAdmin } = auth;
+
+    const body = req.body ?? {};
+    const { texto, estado, url_imagem } = body;
+
+    const querAtualizarTexto = texto !== undefined;
+    const querAtualizarEstado = estado !== undefined;
+    const querAtualizarImagem =
+        !!req.file || url_imagem === null; // só consideramos null explícito como "remover"
+
+    if (!querAtualizarTexto && !querAtualizarEstado && !querAtualizarImagem) {
+        return res
+            .status(400)
+            .json({ erro: "envie ao menos um campo para atualizar" });
     }
 
-    // Se "texto" foi enviado, valida que é string não vazia; guarda versão aparada
-    let novoTexto = null;
-    if (texto !== undefined) {
+    let novoTexto = undefined;
+    if (querAtualizarTexto) {
         if (typeof texto !== "string" || texto.trim() === "") {
-            return res.status(400).json({ erro: "texto deve ser string não vazia" });
+            return res
+                .status(400)
+                .json({ erro: "texto deve ser string não vazia" });
         }
         novoTexto = texto.trim();
     }
 
-    // Se "estado" foi enviado, valida que é "a" (aberto) ou "f" (fechado)
-    let novoEstado = null;
-    if (estado !== undefined) {
-        if (!(estado === "a" || estado === "f")) {
+    let novoEstado = undefined;
+    if (querAtualizarEstado) {
+        if (!isEstadoValido(estado)) {
             return res.status(400).json({ erro: "estado deve ser 'a' ou 'f'" });
         }
         novoEstado = estado;
     }
 
-    // Se "url_imagem" não foi enviado, mantém null para não alterar; se foi, usa o valor informado
-    const novaUrl = url_imagem === undefined ? null : url_imagem;
+    // Não permitimos setar url_imagem para um valor arbitrário via body;
+    // ou vem arquivo (nova imagem) ou vem null (remover).
+    if (url_imagem !== undefined && url_imagem !== null) {
+        return res.status(400).json({
+            erro:
+                "Para alterar imagem via PATCH, envie um arquivo em 'imagem' ou url_imagem = null para remover.",
+        });
+    }
+
+    let urlImagemAntiga = null;
+    let urlImagemNova = null;
+    let criouNovaImagem = false;
 
     try {
-        // Atualiza apenas os campos enviados:
-        // - COALESCE($1, "texto") mantém o valor atual quando $1 é null (campo não enviado)
-        // - idem para "estado" e "url_imagem"
-        // - data_atualizacao recebe now()
-        // Regra de autorização: só permite quando o registro é do usuário (Usuarios_id = uid) OU o usuário é admin
+        const chamado = await obterChamadoPorId(id);
+        if (!chamado) {
+            return res.status(404).json({ erro: "não encontrado" });
+        }
+        if (!isAdmin && chamado.Usuarios_id !== uid) {
+            return res.status(404).json({ erro: "não encontrado" });
+        }
+
+        urlImagemAntiga = chamado.url_imagem;
+
+        // Decide a nova URL da imagem
+        if (req.file) {
+            urlImagemNova = await salvarUploadEmDisco(req, req.file);
+            criouNovaImagem = true;
+        } else if (url_imagem === null) {
+            urlImagemNova = null; // remoção explícita
+        } else {
+            urlImagemNova = urlImagemAntiga; // mantém a atual
+        }
+
+        const textoFinal = novoTexto !== undefined ? novoTexto : chamado.texto;
+        const estadoFinal =
+            novoEstado !== undefined ? novoEstado : chamado.estado;
+
         const { rows } = await pool.query(
             `UPDATE "Chamados"
-                 SET "texto"            = COALESCE($1, "texto"),
-                     "estado"           = COALESCE($2, "estado"),
-                     "url_imagem"       = COALESCE($3, "url_imagem"),
-                     "data_atualizacao" = now()
-             WHERE "id" = $4 and
-                  ("Usuarios_id" = $5 or $6)
-             RETURNING *`,
-            [novoTexto, novoEstado, novaUrl, id, uid, isAdmin]
+       SET "texto"            = $1,
+           "estado"           = $2,
+           "url_imagem"       = $3,
+           "data_atualizacao" = now()
+       WHERE "id" = $4
+       RETURNING *`,
+            [textoFinal, estadoFinal, urlImagemNova, id]
         );
 
-        // Se nenhum registro foi atualizado, pode ser inexistente ou sem permissão → 404
-        if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
+        if (!rows[0]) {
+            if (criouNovaImagem && urlImagemNova) {
+                await removerArquivoPorUrl(urlImagemNova);
+            }
+            return res.status(404).json({ erro: "não encontrado" });
+        }
 
-        // Retorna o registro atualizado
+        // Se houve mudança de imagem (nova ou remoção) e existia antiga, apaga antiga
+        if (urlImagemAntiga && urlImagemAntiga !== urlImagemNova) {
+            await removerArquivoPorUrl(urlImagemAntiga);
+        }
+
         res.json(rows[0]);
     } catch {
-        // Em erro inesperado (banco/servidor), responde 500
+        if (criouNovaImagem && urlImagemNova) {
+            await removerArquivoPorUrl(urlImagemNova);
+        }
         res.status(500).json({ erro: "erro interno" });
     }
 });
 
-// Rota DELETE /api/chamados/1
+// -----------------------------------------------------------------------------
+// DELETE /api/chamados/:id
+// Apaga o chamado e, se tiver url_imagem, tenta apagar o arquivo de disco também.
+// -----------------------------------------------------------------------------
 router.delete("/:id", async (req, res) => {
-    const id = Number(req.params.id);
-
-    if (!Number.isInteger(id) || id <= 0) {
+    const id = parseIdParam(req.params.id);
+    if (!id) {
         return res.status(400).json({ erro: "id inválido" });
     }
 
-    // ID do usuário autenticado (preenchido pelo authMiddleware em req.user)
-    const uid = req.user?.id;
-    // Flag de autorização: considera admin quando papel == 1
-    const isAdmin = req.user?.papel == 1;
+    const auth = getAuthInfo(req, res);
+    if (!auth) return;
+    const { uid, isAdmin } = auth;
 
     try {
-        const r = await pool.query(
-            `DELETE FROM "Chamados" 
-            WHERE "id" = $1 and 
-                 ("Usuarios_id" = $2 or $3)
-            RETURNING "id"`,
-            [id, uid, isAdmin]
-        );
-        if (!r.rowCount) return res.status(404).json({ erro: "não encontrado" });
+        const chamado = await obterChamadoPorId(id);
+        if (!chamado) {
+            return res.status(404).json({ erro: "não encontrado" });
+        }
+        if (!isAdmin && chamado.Usuarios_id !== uid) {
+            return res.status(404).json({ erro: "não encontrado" });
+        }
+
+        await pool.query(`DELETE FROM "Chamados" WHERE "id" = $1`, [id]);
+
+        if (chamado.url_imagem) {
+            await removerArquivoPorUrl(chamado.url_imagem);
+        }
+
         res.status(204).end();
     } catch {
         res.status(500).json({ erro: "erro interno" });
