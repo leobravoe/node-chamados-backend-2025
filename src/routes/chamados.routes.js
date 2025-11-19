@@ -500,7 +500,7 @@ router.delete("/:id", async (req, res) => {
 
     const auth = getAuthInfo(req, res);
     if (!auth) return;
-    const { uid, isAdmin } = auth;
+    const { isAdmin } = auth;
 
     try {
         // Antes de apagar, buscamos o chamado para verificar:
@@ -510,8 +510,8 @@ router.delete("/:id", async (req, res) => {
         if (!chamado) {
             return res.status(404).json({ erro: "não encontrado" });
         }
-        if (!isAdmin && chamado.Usuarios_id !== uid) {
-            return res.status(404).json({ erro: "não encontrado" });
+        if (!isAdmin) {
+            return res.status(404).json({ erro: "Somente administradores podem remover chamados" });
         }
 
         // Remove o registro da tabela.
