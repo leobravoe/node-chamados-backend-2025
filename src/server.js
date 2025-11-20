@@ -16,6 +16,7 @@ import cookieParser from "cookie-parser";// Parser de cookies → preenche req.c
 import chamadosRouter from "./routes/chamados.routes.js";  // Rotas de CRUD de chamados
 import usuariosRouter from "./routes/usuarios.routes.js";  // Rotas de auth/registro/refresh
 import { authMiddleware } from "./middlewares/auth.js";    // Middleware de autenticação (access token)
+import { globalLimiter, authLimiter, userLimiter } from "./middlewares/rateLimiters.js";
 
 dotenv.config();                         // Torna disponíveis as variáveis do .env em process.env
 const app = express();                   // Cria a aplicação Express
@@ -40,6 +41,14 @@ app.use(cookieParser());
 // No front, lembre de incluir credenciais: fetch(url, { credentials: "include" }) ou 
 // axios.get(url, { withCredentials: true }).
 app.use(cors({ origin: true, credentials: true }));
+
+// Rate limit global para toda a API
+app.use("/api", globalLimiter);
+
+// Rate limit específico para autenticação
+app.use("/api/usuarios/login", authLimiter);
+app.use("/api/usuarios/register", authLimiter);
+app.use("/api/usuarios/refresh", authLimiter);
 
 // armazenamento de arquivos enviados (pasta na raiz /uploads)
 // Observação: o Express serve os arquivos como estáticos; a URL pública fica /uploads/<arquivo>.
@@ -68,7 +77,7 @@ app.use("/api/usuarios", usuariosRouter);
 // PUT /api/chamados/1
 // PATCH /api/chamados/1
 // DELETE /api/chamados/1
-app.use("/api/chamados", authMiddleware, chamadosRouter);
+app.use("/api/chamados", authMiddleware, userLimiter, chamadosRouter);
 
 // Porta do servidor (usa PORT do .env se existir; senão, 3000)
 const PORT = process.env.PORT || 3000;
