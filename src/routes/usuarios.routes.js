@@ -12,6 +12,7 @@ import jwt from "jsonwebtoken";           // Biblioteca para assinar/verificar J
 import bcrypt from "bcryptjs";            // Biblioteca para hashing e verificação de senha
 import dotenv from "dotenv";              // Carrega variáveis do .env em process.env
 import { pool } from "../database/db.js"; // Pool do Postgres para consultas ao banco
+import { recaptchaMiddleware } from "../middlewares/recaptcha.js";
 
 dotenv.config();                          // Inicializa dotenv (deixa segredos acessíveis via process.env)
 const router = Router();                  // Cria um roteador isolado para montar em /api/usuarios (por exemplo)
@@ -70,7 +71,50 @@ function clearRefreshCookie(res, req) {
     res.clearCookie(REFRESH_COOKIE, cookieOpts(req));
 }
 
-router.post("/login", async (req, res) => {
+router.post("/register", recaptchaMiddleware, async (req, res) => {
+    // Cadastro simples:
+    // 1) valida campos mínimos;
+    // 2) gera hash da senha;
+    // 3) insere usuário como papel padrão (0);
+    // 4) emite access + refresh e grava o refresh em cookie HttpOnly.
+    const { nome, email, senha } = req.body ?? {};
+    if (!nome || !email || !senha) {
+        return res.status(400).json({ erro: "nome, email e senha são obrigatórios" });
+    }
+    if (String(senha).length < 6) {
+        return res.status(400).json({ erro: "senha deve ter pelo menos 6 caracteres" });
+    }
+
+    try {
+        const senha_hash = await bcrypt.hash(senha, 12); // custo 12: equilibrado entre segurança e performance
+        const papel = 0;
+
+        const r = await pool.query(
+            `INSERT INTO "Usuarios" ("nome","email","senha_hash","papel")
+             VALUES ($1,$2,$3,$4)
+             RETURNING "id","nome","email","papel"`,
+            [String(nome).trim(), String(email).trim().toLowerCase(), senha_hash, papel]
+        );
+        const user = r.rows[0];
+
+        const access_token = signAccessToken(user);
+        const refresh_token = signRefreshToken(user);
+        setRefreshCookie(res, req, refresh_token);
+
+        return res.status(201).json({
+            token_type: "Bearer",
+            access_token,
+            expires_in: JWT_ACCESS_EXPIRES,
+            user: { id: user.id, nome: user.nome, email: user.email, papel: user.papel },
+        });
+    } catch (err) {
+        // Código 23505 (Postgres) indica violação de UNIQUE (e.g. email já cadastrado)
+        if (err?.code === "23505") return res.status(409).json({ erro: "email já cadastrado" });
+        return res.status(500).json({ erro: "erro interno" });
+    }
+});
+
+router.post("/login", recaptchaMiddleware, async (req, res) => {
     // Autentica por email/senha:
     // 1) busca usuário pelo email;
     // 2) compara senha com hash;
@@ -135,49 +179,6 @@ router.post("/refresh", async (req, res) => {
         // Se o refresh estiver inválido/expirado, apaga cookie para não “travar” o cliente
         clearRefreshCookie(res, req);
         return res.status(401).json({ erro: "refresh inválido ou expirado" });
-    }
-});
-
-router.post("/register", async (req, res) => {
-    // Cadastro simples:
-    // 1) valida campos mínimos;
-    // 2) gera hash da senha;
-    // 3) insere usuário como papel padrão (0);
-    // 4) emite access + refresh e grava o refresh em cookie HttpOnly.
-    const { nome, email, senha } = req.body ?? {};
-    if (!nome || !email || !senha) {
-        return res.status(400).json({ erro: "nome, email e senha são obrigatórios" });
-    }
-    if (String(senha).length < 6) {
-        return res.status(400).json({ erro: "senha deve ter pelo menos 6 caracteres" });
-    }
-
-    try {
-        const senha_hash = await bcrypt.hash(senha, 12); // custo 12: equilibrado entre segurança e performance
-        const papel = 0;
-
-        const r = await pool.query(
-            `INSERT INTO "Usuarios" ("nome","email","senha_hash","papel")
-             VALUES ($1,$2,$3,$4)
-             RETURNING "id","nome","email","papel"`,
-            [String(nome).trim(), String(email).trim().toLowerCase(), senha_hash, papel]
-        );
-        const user = r.rows[0];
-
-        const access_token = signAccessToken(user);
-        const refresh_token = signRefreshToken(user);
-        setRefreshCookie(res, req, refresh_token);
-
-        return res.status(201).json({
-            token_type: "Bearer",
-            access_token,
-            expires_in: JWT_ACCESS_EXPIRES,
-            user: { id: user.id, nome: user.nome, email: user.email, papel: user.papel },
-        });
-    } catch (err) {
-        // Código 23505 (Postgres) indica violação de UNIQUE (e.g. email já cadastrado)
-        if (err?.code === "23505") return res.status(409).json({ erro: "email já cadastrado" });
-        return res.status(500).json({ erro: "erro interno" });
     }
 });
 

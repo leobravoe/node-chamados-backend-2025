@@ -13,6 +13,8 @@ import path from "path";
 // Módulo nativo do Node para operações de sistema de arquivos (criar pasta, etc.).
 import fs from "fs";
 
+import { recaptchaMiddleware } from "../middlewares/recaptcha.js";
+
 // Versão "promisificada" de algumas funções de arquivo (escrever e apagar arquivo).
 import { writeFile, unlink } from "node:fs/promises";
 
@@ -194,7 +196,7 @@ router.get("/:id", async (req, res) => {
 // -----------------------------------------------------------------------------
 // upload.single("imagem") é o middleware do multer que processa UM arquivo
 // com o campo "imagem" no formulário (input name="imagem").
-router.post("/", upload.single("imagem"), async (req, res) => {
+router.post("/", upload.single("imagem"), recaptchaMiddleware, async (req, res) => {
     // Primeiro, validamos autenticação (precisa estar logado).
     const auth = getAuthInfo(req, res);
     if (!auth) return;
@@ -257,7 +259,7 @@ router.post("/", upload.single("imagem"), async (req, res) => {
 // -----------------------------------------------------------------------------
 // PUT semântica: você envia TODOS os campos obrigatórios de um recurso e substitui
 // o recurso como um todo (diferente de PATCH, que atualiza só partes).
-router.put("/:id", upload.single("imagem"), async (req, res) => {
+router.put("/:id", upload.single("imagem"), recaptchaMiddleware, async (req, res) => {
     const id = parseIdParam(req.params.id);
     if (!id) {
         return res.status(400).json({ erro: "id inválido" });
