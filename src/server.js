@@ -33,14 +33,38 @@ app.use(express.json());
 // permitindo ao servidor acessar, por exemplo, o refresh_token HttpOnly.
 app.use(cookieParser());
 
-// origin: true - diz ao middleware de CORS para “espelhar” a origem que chegou no header Origin do navegador 
-// Na prática, isso libera qualquer site que fizer a requisição e permite funcionar com credenciais.
-// credentials: true - autoriza o navegador a enviar e receber cookies e o 
-// header Authorization (o CORS responde com Access-Control-Allow-Credentials: true). 
-// Quando isso está ativo, o CORS não pode usar *, por isso o “espelho” do origin: true é útil. 
-// No front, lembre de incluir credenciais: fetch(url, { credentials: "include" }) ou 
+// CORS
+// Lista explícita de origens permitidas na aplicação:
+// - http://localhost:5173           → ambiente de desenvolvimento (Vite dev server)
+// - https://leobravoe.github.io     → produção (frontend no GitHub Pages)
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://leobravoe.github.io",
+];
+
+// Configuração CORS:
+// - origin: função que valida se a origem está na lista allowedOrigins;
+// - credentials: true → permite envio de cookies e Authorization nas requisições CORS.
+// No front, lembre de usar fetch(url, { credentials: "include" }) ou
 // axios.get(url, { withCredentials: true }).
-app.use(cors({ origin: true, credentials: true }));
+app.use(
+    cors({
+        origin: (origin, callback) => {
+            // Requisições sem Origin (ex.: curl, ferramentas internas) são aceitas
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+
+            console.warn(`Origem bloqueada pelo CORS: ${origin}`);
+            return callback(new Error(`Origin ${origin} não permitida pelo CORS`));
+        },
+        credentials: true,
+    })
+);
 
 // Rate limit global para toda a API
 app.use("/api", globalLimiter);
@@ -52,12 +76,12 @@ app.use("/api/usuarios/refresh", authLimiter);
 
 // armazenamento de arquivos enviados (pasta na raiz /uploads)
 // Observação: o Express serve os arquivos como estáticos; a URL pública fica /uploads/<arquivo>.
-app.use('/uploads', express.static('./uploads'));
+app.use("/uploads", express.static("./uploads"));
 
 // Rota índice apenas para documentação rápida das rotas de chamados
 app.get("/", (_req, res) => {
     res.json({
-        "status": "server online"
+        status: "server online",
     });
 });
 
@@ -89,7 +113,7 @@ const externalUrl = process.env.RENDER_EXTERNAL_URL;
 const server = app.listen(PORT, () => {
     const baseUrl = externalUrl || `http://localhost:${PORT}`;
     console.log(`Servidor rodando em ${baseUrl}`);
-    console.log("CORS configurado: permissivo (aceita qualquer origem).");
+    console.log("CORS configurado. Origens permitidas:", allowedOrigins);
 });
 
 server.keepAliveTimeout = 120 * 1000;
