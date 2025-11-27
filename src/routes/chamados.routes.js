@@ -126,7 +126,10 @@ function getAuthInfo(req, res) {
 // Faz SELECT no banco e retorna o primeiro resultado ou null se não existir.
 async function obterChamadoPorId(id) {
     const { rows } = await pool.query(
-        `SELECT * FROM "Chamados" WHERE "id" = $1`,
+        `SELECT "Chamados".*, "Usuarios"."nome" 
+        FROM "Chamados" 
+        JOIN "Usuarios" ON "Chamados"."Usuarios_id" = "Usuarios"."id"
+        WHERE "Chamados"."id" = $1`,
         [id]
     );
     return rows[0] ?? null;
@@ -156,7 +159,9 @@ const upload = multer({
 router.get("/", async (_req, res) => {
     try {
         const { rows } = await pool.query(
-            `SELECT * FROM "Chamados" ORDER BY "id" DESC`
+            `SELECT "Chamados".*, "Usuarios"."nome" FROM "Chamados" 
+            JOIN "Usuarios" ON "Chamados"."Usuarios_id" = "Usuarios"."id"
+            ORDER BY "Chamados"."data_atualizacao" ASC`
         );
         // Devolve o array de chamados em formato JSON.
         res.json(rows);
