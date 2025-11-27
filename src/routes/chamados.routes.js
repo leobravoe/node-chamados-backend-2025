@@ -161,7 +161,7 @@ router.get("/", async (_req, res) => {
         const { rows } = await pool.query(
             `SELECT "Chamados".*, "Usuarios"."nome" FROM "Chamados" 
             JOIN "Usuarios" ON "Chamados"."Usuarios_id" = "Usuarios"."id"
-            ORDER BY "Chamados"."data_atualizacao" ASC`
+            ORDER BY "Chamados"."estado", "Chamados"."data_atualizacao" ASC`
         );
         // Devolve o array de chamados em formato JSON.
         res.json(rows);
