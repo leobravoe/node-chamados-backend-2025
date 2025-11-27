@@ -44,28 +44,26 @@ function signRefreshToken(u) {
 }
 
 function cookieOpts(req) {
-    // Opções do cookie do refresh: HttpOnly (não acessível via JS do navegador),
-    // SameSite=Lax (mitiga CSRF na maioria dos fluxos same-site), secure=false para desenvolvimento,
-    // path limitado ao prefixo onde o router for montado (ex.: "/api/usuarios"),
-    // e Max-Age para expiração no cliente.
+    // Opções do cookie do refresh:
+    // - httpOnly: true  → não acessível via JS (protege contra XSS);
+    // - sameSite: "None" → permite envio em requisições cross-site (GitHub Pages → Render);
+    // - secure: isProduction → em produção (HTTPS) o cookie só viaja por HTTPS;
+    // - path: req.baseUrl || "/" → cookie é enviado para as rotas desse router (ex.: /api/usuarios/*);
+    // - maxAge: REFRESH_MAX_AGE → tempo de vida do refresh no cliente.
     return {
         httpOnly: true,
-        sameSite: "Lax",
-        secure: isProduction,            // simples: HTTP em dev; quando for subir HTTPS, troque para true
-        // Path define o prefixo de URL no qual o navegador anexa o cookie. 
-        // Em Express, req.baseUrl é o caminho onde esse router foi montado; 
-        // usar path: req.baseUrl faz o cookie só ir para as rotas desse módulo. 
-        // Exemplo: se o router está em /api/usuarios, o cookie é enviado para 
-        // /api/usuarios/login e /api/usuarios/refresh, mas não para /api/chamados/.... 
-        // O || "/" é um fallback (caso não haja prefixo), tornando o cookie válido no site todo.
+        sameSite: "None",
+        secure: isProduction,      // em produção (Render/HTTPS) precisa ser true
         path: req.baseUrl || "/",
         maxAge: REFRESH_MAX_AGE,
     };
 }
+
 function setRefreshCookie(res, req, token) {
     // Grava o refresh token em cookie HttpOnly com as opções acima
     res.cookie(REFRESH_COOKIE, token, cookieOpts(req));
 }
+
 function clearRefreshCookie(res, req) {
     // Remove o cookie de refresh (logout ou refresh inválido)
     res.clearCookie(REFRESH_COOKIE, cookieOpts(req));
