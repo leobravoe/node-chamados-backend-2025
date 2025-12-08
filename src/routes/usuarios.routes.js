@@ -52,7 +52,7 @@ function cookieOpts(req) {
     // - maxAge: REFRESH_MAX_AGE → tempo de vida do refresh no cliente.
     return {
         httpOnly: true,
-        sameSite: "None",
+        sameSite: isProduction ? "None" : "Lax", // Em dev seta Lax, em produção None
         secure: isProduction,      // em produção (Render/HTTPS) precisa ser true
         path: req.baseUrl || "/",
         maxAge: REFRESH_MAX_AGE,
