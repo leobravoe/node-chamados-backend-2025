@@ -23,3 +23,7 @@ CREATE TABLE IF NOT EXISTS "Chamados" (
 INSERT INTO "Usuarios" ("nome", "email", "senha_hash", "papel") VALUES
 ('Admin',                  'admin@admin.com.br',           '$2b$12$Tcy09TkzUmQEsh7A/IDxteT.6Za0JhHEHNHXeYOf.JC6noyi.kKvW', 1),
 ('Usuário',                'user@user.com.br',             '$2b$12$B3qSsXRpc1DMcFzEK6PztuVSFc09DfRzByVPAFDWDsbvRphxxmGU6', 0);
+
+INSERT INTO "Chamados" ("Usuarios_id", "texto", "estado", "url_imagem") VALUES 
+(1, 'Ajuda com JS', 'a', null),
+(2, 'Ajuda com React', 'a', null);
