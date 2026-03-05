@@ -14,7 +14,7 @@ import dotenv from "dotenv";
 import { pool } from "../database/db-mysql.js"; // agora MariaDB/mysql2 pool
 import { recaptchaMiddleware } from "../middlewares/recaptcha.js";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 const router = Router();
 
 const {

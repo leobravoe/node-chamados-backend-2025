@@ -7,11 +7,11 @@
 
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
-const { RECAPTCHA_SECRET_KEY } = process.env;
+const { RECAPTCHA_SECRET_KEY, NODE_ENV } = process.env;
 
-if (!RECAPTCHA_SECRET_KEY) {
+if (!RECAPTCHA_SECRET_KEY && NODE_ENV != "test") {
     console.warn(
         "[WARN] RECAPTCHA_SECRET_KEY não definida. " +
         "A verificação de reCAPTCHA ficará DESATIVADA."

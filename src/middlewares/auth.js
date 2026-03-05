@@ -10,7 +10,7 @@
 import jwt from "jsonwebtoken";   // Biblioteca para assinar/verificar JSON Web Tokens (JWT)
 import dotenv from "dotenv";      // Carrega variáveis do arquivo .env para process.env
 
-dotenv.config();                  // Inicializa o dotenv para disponibilizar JWT_ACCESS_SECRET
+dotenv.config({ quiet: true });            // Inicializa o dotenv para disponibilizar JWT_ACCESS_SECRET
 const { JWT_ACCESS_SECRET } = process.env; // Segredo usado para verificar a assinatura do access token
 
 export function authMiddleware(req, res, next) {

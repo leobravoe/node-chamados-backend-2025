@@ -8,7 +8,7 @@ import usuariosRouter from "./routes/usuarios.routes.js";
 import { authMiddleware } from "./middlewares/auth.js";
 import { globalLimiter, authLimiter, userLimiter } from "./middlewares/rateLimiters.js";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const app = express();
 
