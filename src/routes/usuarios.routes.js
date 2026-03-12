@@ -1,17 +1,8 @@
-// src/routes/usuarios.routes.js
-// ------------------------------------------------------------------------------------------
-// Ajustes Postgres -> MariaDB (mysql2):
-// - pool.query agora retorna [rows] (não { rows, rowCount })
-// - placeholders: $1, $2... -> ?
-// - INSERT ... RETURNING -> INSERT e depois SELECT pelo insertId
-// - código de erro UNIQUE do Postgres (23505) -> MariaDB: ER_DUP_ENTRY (errno 1062 / code 'ER_DUP_ENTRY')
-// ------------------------------------------------------------------------------------------
-
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
-import { pool } from "../database/db-mysql.js"; // agora MariaDB/mysql2 pool
+import { pool } from "../database/db-mysql.js";
 import { recaptchaMiddleware } from "../middlewares/recaptcha.js";
 
 dotenv.config({ quiet: true });
@@ -55,6 +46,42 @@ const clearRefreshCookie = (res, req) => {
   res.clearCookie(REFRESH_COOKIE, cookieOpts(req));
 };
 
+/**
+ * @openapi
+ * /api/usuarios/register:
+ *   post:
+ *     tags: [Usuários]
+ *     summary: Cadastra um novo usuário
+ *     description: |
+ *       Cria um novo usuário, gera access token JWT e define o cookie HTTP-only de refresh token.
+ *       Esta rota passa por recaptchaMiddleware.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegisterRequest'
+ *     responses:
+ *       201:
+ *         description: Usuário criado com sucesso
+ *         headers:
+ *           Set-Cookie:
+ *             description: Cookie HTTP-only refresh_token
+ *             schema:
+ *               type: string
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequestsAuth'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
 router.post("/register", recaptchaMiddleware, async (req, res) => {
   const { nome, email, senha } = req.body ?? {};
   if (!nome || !email || !senha) {
@@ -68,7 +95,6 @@ router.post("/register", recaptchaMiddleware, async (req, res) => {
     const senha_hash = await bcrypt.hash(senha, 12);
     const papel = 0;
 
-    // MariaDB: sem RETURNING. Faz INSERT e depois SELECT pelo insertId.
     const [result] = await pool.query(
       `INSERT INTO \`Usuarios\` (\`nome\`, \`email\`, \`senha_hash\`, \`papel\`)
        VALUES (?, ?, ?, ?)`,
@@ -97,7 +123,6 @@ router.post("/register", recaptchaMiddleware, async (req, res) => {
       user: { id: user.id, nome: user.nome, email: user.email, papel: user.papel },
     });
   } catch (err) {
-    // MariaDB duplicate key: ER_DUP_ENTRY (errno 1062)
     if (err?.code === "ER_DUP_ENTRY" || err?.errno === 1062) {
       return res.status(409).json({ erro: "email já cadastrado" });
     }
@@ -105,6 +130,42 @@ router.post("/register", recaptchaMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/usuarios/login:
+ *   post:
+ *     tags: [Usuários]
+ *     summary: Autentica um usuário
+ *     description: |
+ *       Autentica com email e senha, gera access token JWT e define o cookie HTTP-only de refresh token.
+ *       Esta rota passa por recaptchaMiddleware.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *     responses:
+ *       200:
+ *         description: Login realizado com sucesso
+ *         headers:
+ *           Set-Cookie:
+ *             description: Cookie HTTP-only refresh_token
+ *             schema:
+ *               type: string
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequestsAuth'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
 router.post("/login", recaptchaMiddleware, async (req, res) => {
   const { email, senha } = req.body ?? {};
   if (!email || !senha) return res.status(400).json({ erro: "email e senha são obrigatórios" });
@@ -138,6 +199,31 @@ router.post("/login", recaptchaMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/usuarios/refresh:
+ *   post:
+ *     tags: [Usuários]
+ *     summary: Gera novo access token a partir do refresh token
+ *     description: Usa o cookie HTTP-only refresh_token para emitir novo access token.
+ *     security:
+ *       - refreshCookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Novo access token gerado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RefreshResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequestsAuth'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
 router.post("/refresh", async (req, res) => {
   const refresh = req.cookies?.[REFRESH_COOKIE];
   if (!refresh) return res.status(401).json({ erro: "refresh ausente" });
@@ -169,6 +255,19 @@ router.post("/refresh", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/usuarios/logout:
+ *   post:
+ *     tags: [Usuários]
+ *     summary: Efetua logout
+ *     description: Remove o cookie refresh_token e encerra a sessão do cliente.
+ *     responses:
+ *       204:
+ *         description: Logout realizado com sucesso
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequestsGlobal'
+ */
 router.post("/logout", async (req, res) => {
   clearRefreshCookie(res, req);
   return res.status(204).end();

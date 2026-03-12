@@ -1,5 +1,3 @@
-// src/routes/chamados.routes.js
-
 import { Router } from "express";
 import multer from "multer";
 import path from "path";
@@ -7,15 +5,9 @@ import fs from "fs";
 
 import { recaptchaMiddleware } from "../middlewares/recaptcha.js";
 import { writeFile, unlink } from "node:fs/promises";
-
-// Pool de conexões com o banco de dados (agora MariaDB)
 import { pool } from "../database/db-mysql.js";
 
 const router = Router();
-
-// -----------------------------------------------------------------------------
-// Configuração de uploads (diretório + helpers)
-// -----------------------------------------------------------------------------
 
 const uploadDir = path.resolve("uploads");
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -75,7 +67,6 @@ function getAuthInfo(req, res) {
   return { uid, isAdmin };
 }
 
-// Helper para carregar um chamado por ID (MariaDB: ? placeholders, sem "RETURNING")
 async function obterChamadoPorId(id) {
   const [rows] = await pool.query(
     `SELECT \`Chamados\`.*, \`Usuarios\`.\`nome\`
@@ -87,10 +78,6 @@ async function obterChamadoPorId(id) {
   return rows[0] ?? null;
 }
 
-// -----------------------------------------------------------------------------
-// Multer usando memória (arquivo só vai pro disco depois de validar tudo)
-// -----------------------------------------------------------------------------
-
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -98,9 +85,31 @@ const upload = multer({
   },
 });
 
-// -----------------------------------------------------------------------------
-// GET /api/chamados
-// -----------------------------------------------------------------------------
+/**
+ * @openapi
+ * /api/chamados:
+ *   get:
+ *     tags: [Chamados]
+ *     summary: Lista todos os chamados
+ *     description: Retorna os chamados ordenados por estado e data_atualizacao.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de chamados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Chamado'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequestsUser'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
 router.get("/", async (_req, res) => {
   try {
     const [rows] = await pool.query(
@@ -115,9 +124,34 @@ router.get("/", async (_req, res) => {
   }
 });
 
-// -----------------------------------------------------------------------------
-// GET /api/chamados/:id
-// -----------------------------------------------------------------------------
+/**
+ * @openapi
+ * /api/chamados/{id}:
+ *   get:
+ *     tags: [Chamados]
+ *     summary: Busca um chamado por ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/IdParam'
+ *     responses:
+ *       200:
+ *         description: Chamado encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Chamado'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequestsUser'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
 router.get("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) {
@@ -133,9 +167,41 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// -----------------------------------------------------------------------------
-// POST /api/chamados
-// -----------------------------------------------------------------------------
+/**
+ * @openapi
+ * /api/chamados:
+ *   post:
+ *     tags: [Chamados]
+ *     summary: Cria um novo chamado
+ *     description: |
+ *       Cria um chamado para o usuário autenticado.
+ *       Aceita upload opcional de imagem.
+ *       Se o campo estado não for enviado, assume "a".
+ *       Esta rota passa por recaptchaMiddleware.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/ChamadoCreateMultipart'
+ *     responses:
+ *       201:
+ *         description: Chamado criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Chamado'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequestsUser'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
 router.post("/", upload.single("imagem"), recaptchaMiddleware, async (req, res) => {
   const auth = getAuthInfo(req, res);
   if (!auth) return;
@@ -161,7 +227,6 @@ router.post("/", upload.single("imagem"), recaptchaMiddleware, async (req, res) 
       urlImagem = await salvarUploadEmDisco(req, req.file);
     }
 
-    // MariaDB: INSERT sem RETURNING; pega insertId e depois faz SELECT
     const [result] = await pool.query(
       `INSERT INTO \`Chamados\` (\`Usuarios_id\`, \`texto\`, \`estado\`, \`url_imagem\`)
        VALUES (?, ?, ?, ?)`,
@@ -180,9 +245,49 @@ router.post("/", upload.single("imagem"), recaptchaMiddleware, async (req, res) 
   }
 });
 
-// -----------------------------------------------------------------------------
-// PUT /api/chamados/:id
-// -----------------------------------------------------------------------------
+/**
+ * @openapi
+ * /api/chamados/{id}:
+ *   put:
+ *     tags: [Chamados]
+ *     summary: Atualiza completamente um chamado
+ *     description: |
+ *       Atualiza texto, estado e opcionalmente a imagem.
+ *       Usuário comum só pode atualizar o próprio chamado.
+ *       Administrador pode atualizar qualquer chamado.
+ *       Esta rota passa por recaptchaMiddleware.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/IdParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/ChamadoPutMultipart'
+ *     responses:
+ *       200:
+ *         description: Chamado atualizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Chamado'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         description: Não encontrado ou sem permissão de acesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequestsUser'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
 router.put("/:id", upload.single("imagem"), recaptchaMiddleware, async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) {
@@ -224,7 +329,6 @@ router.put("/:id", upload.single("imagem"), recaptchaMiddleware, async (req, res
       urlImagemNova = urlImagemAntiga;
     }
 
-    // MariaDB: UPDATE sem RETURNING; checa affectedRows e depois faz SELECT
     const [result] = await pool.query(
       `UPDATE \`Chamados\`
        SET \`texto\` = ?,
@@ -256,9 +360,51 @@ router.put("/:id", upload.single("imagem"), recaptchaMiddleware, async (req, res
   }
 });
 
-// -----------------------------------------------------------------------------
-// PATCH /api/chamados/:id
-// -----------------------------------------------------------------------------
+/**
+ * @openapi
+ * /api/chamados/{id}:
+ *   patch:
+ *     tags: [Chamados]
+ *     summary: Atualiza parcialmente um chamado
+ *     description: |
+ *       Atualização parcial de chamado.
+ *       Envie ao menos um campo.
+ *       Para trocar a imagem, envie um arquivo em "imagem".
+ *       Para remover a imagem, envie "url_imagem = null".
+ *       Usuário comum só pode atualizar o próprio chamado.
+ *       Administrador pode atualizar qualquer chamado.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/IdParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/ChamadoPatchMultipart'
+ *     responses:
+ *       200:
+ *         description: Chamado atualizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Chamado'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         description: Não encontrado ou sem permissão de acesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequestsUser'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
 router.patch("/:id", upload.single("imagem"), async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) {
@@ -361,9 +507,38 @@ router.patch("/:id", upload.single("imagem"), async (req, res) => {
   }
 });
 
-// -----------------------------------------------------------------------------
-// DELETE /api/chamados/:id
-// -----------------------------------------------------------------------------
+/**
+ * @openapi
+ * /api/chamados/{id}:
+ *   delete:
+ *     tags: [Chamados]
+ *     summary: Remove um chamado
+ *     description: |
+ *       Remove um chamado e a imagem associada, se existir.
+ *       No código atual, apenas administradores podem remover chamados.
+ *       Quando o usuário não é administrador, a implementação retorna 404 e não 403.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/IdParam'
+ *     responses:
+ *       204:
+ *         description: Chamado removido com sucesso
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         description: Não encontrado ou usuário sem perfil suficiente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequestsUser'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
 router.delete("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) {
