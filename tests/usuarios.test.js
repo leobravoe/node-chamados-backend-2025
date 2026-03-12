@@ -12,6 +12,7 @@ describe("Usuários (auth)", () => { // agrupa testes de autenticação/usuário
         if (res.status === 201) { // se realmente criou agora
             expect(res.body).toHaveProperty("access_token"); // valida que veio um access token no body
             expect(res.body.user.email).toBe(USER.email); // valida que o email retornado é o do usuário criado
+            expect(res.headers["set-cookie"]?.join(";") || "").toContain("refresh_token="); // valida que o header Set-Cookie contém refresh_token
         } // fecha o if
     }); // fecha o teste de register
 
