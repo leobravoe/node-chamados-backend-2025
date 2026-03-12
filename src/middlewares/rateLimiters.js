@@ -24,8 +24,8 @@ export const userLimiter = rateLimit({
   standardHeaders: "draft-7",
   legacyHeaders: false,
   keyGenerator: (req) => {
-    if (req.user?.uid) return `uid:${req.user.uid}`;
-    return ipKeyGenerator(req.ip); // <-- normaliza IPv4/IPv6 corretamente
+    if (req.user?.id) return `uid:${req.user.id}`;
+    return ipKeyGenerator(req.ip);
   },
   message: { erro: "Você fez muitas requisições. Reduza o ritmo." },
 });
