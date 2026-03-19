@@ -37,6 +37,12 @@ const buildUsuariosCases = () => {
             params: ["Teste", uniqueEmail("papel-invalido"), "hash123", 9],
             shouldPass: false,
         },
+        {
+            description: "papel negativo",
+            sql: "INSERT INTO Usuarios (nome, email, senha_hash, papel) VALUES (?, ?, ?, ?)",
+            params: ["Teste", uniqueEmail("papel-invalido"), "hash123", -1],
+            shouldPass: false,
+        },
     ];
 };
 export { buildUsuariosCases };
