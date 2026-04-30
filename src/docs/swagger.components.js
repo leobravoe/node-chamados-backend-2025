@@ -215,7 +215,7 @@
  *           example: f
  *         url_imagem:
  *           nullable: true
- *           description: Envie null para remover a imagem atual
+ *           description: Envie null no JSON ou "null" em multipart para remover a imagem atual
  *           example: null
  *         imagem:
  *           type: string

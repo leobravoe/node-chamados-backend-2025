@@ -1,15 +1,9 @@
-// src/server.js
-import dotenv from "dotenv";
 import { app } from "./app.js";
+import { env } from "./config/env.js";
 
-dotenv.config({ quiet: true });
-
-const PORT = process.env.PORT || 3000;
-const externalUrl = process.env.RENDER_EXTERNAL_URL;
-
-const server = app.listen(PORT, () => {
-  const baseUrl = externalUrl || `http://localhost:${PORT}`;
-  console.log(`Servidor rodando em ${baseUrl}`);
+const server = app.listen(env.port, () => {
+    const baseUrl = env.externalUrl || `http://localhost:${env.port}`;
+    console.log(`Servidor rodando em ${baseUrl}`);
 });
 
 server.keepAliveTimeout = 120 * 1000;

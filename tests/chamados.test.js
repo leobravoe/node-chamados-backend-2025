@@ -6,12 +6,15 @@ import { pool } from "../src/database/db-mysql.js"; // importa o pool de conexõ
 const USER = { nome: "Usuario Chamados", email: "chamados.user@test.com", senha: "senha123" }; // define um usuário “comum” de teste
 const ADMIN = { nome: "Admin Teste", email: "admin@test.com", senha: "admin123" }; // define um usuário “admin” de teste
 
-describe("Chamados (CRUD)", () => { // agrupa os testes relacionados ao CRUD de chamados
-    afterAll(async () => { // hook do Jest: roda uma vez ao final de TODOS os testes deste describe
+describe("Chamados (CRUD)", () => {
+    // agrupa os testes relacionados ao CRUD de chamados
+    afterAll(async () => {
+        // hook do Jest: roda uma vez ao final de TODOS os testes deste describe
         await pool.end(); // encerra o pool de conexões (evita “handle aberto” e travar o Jest)
     }); // fecha o afterAll
 
-    test("cria chamado e lista", async () => { // define o teste: criar um chamado e confirmar que ele aparece na listagem
+    test("cria chamado e lista", async () => {
+        // define o teste: criar um chamado e confirmar que ele aparece na listagem
         await request(app).post("/api/usuarios/register").send(USER); // registra usuário (pode retornar 201 ou 409 se já existir)
 
         const login = await request(app) // inicia uma requisição HTTP (via SuperTest) para o app
@@ -28,15 +31,88 @@ describe("Chamados (CRUD)", () => { // agrupa os testes relacionados ao CRUD de 
 
         expect(created.status).toBe(201); // valida que o chamado foi criado (HTTP 201 Created)
 
+        const closed = await request(app)
+            .post("/api/chamados")
+            .set("Authorization", `Bearer ${token}`)
+            .send({ texto: "Chamado já resolvido", estado: "f" });
+
+        expect(closed.status).toBe(201);
+
         const list = await request(app) // inicia requisição para listar chamados
             .get("/api/chamados") // define método/rota: GET /chamados (listagem)
             .set("Authorization", `Bearer ${token}`); // autentica a requisição de listagem
 
         expect(list.status).toBe(200); // valida que a listagem retornou OK (HTTP 200)
         expect(list.body.some((c) => c.id === created.body.id)).toBe(true); // valida que o ID criado aparece em algum item da lista
+
+        const filtered = await request(app)
+            .get("/api/chamados?estado=f")
+            .set("Authorization", `Bearer ${token}`);
+
+        expect(filtered.status).toBe(200);
+        expect(filtered.body.length).toBeGreaterThan(0);
+        expect(filtered.body.every((c) => c.estado === "f")).toBe(true);
+        expect(filtered.body.some((c) => c.id === closed.body.id)).toBe(true);
     }); // fecha o teste "cria chamado e lista"
 
-    test("delete exige admin", async () => { // define o teste: deletar deve exigir admin
+    test("patch remove imagem enviada via multipart", async () => {
+        await request(app).post("/api/usuarios/register").send(USER);
+
+        const login = await request(app)
+            .post("/api/usuarios/login")
+            .send({ email: USER.email, senha: USER.senha });
+
+        expect(login.status).toBe(200);
+        const token = login.body.access_token;
+
+        const created = await request(app)
+            .post("/api/chamados")
+            .set("Authorization", `Bearer ${token}`)
+            .field("texto", "Chamado com imagem")
+            .field("estado", "a")
+            .attach("imagem", Buffer.from("imagem fake"), {
+                filename: "evidencia.png",
+                contentType: "image/png",
+            });
+
+        expect(created.status).toBe(201);
+        expect(created.body.url_imagem).toContain("/uploads/");
+
+        const patched = await request(app)
+            .patch(`/api/chamados/${created.body.id}`)
+            .set("Authorization", `Bearer ${token}`)
+            .field("url_imagem", "null");
+
+        expect(patched.status).toBe(200);
+        expect(patched.body.url_imagem).toBeNull();
+    });
+
+    test("upload rejeita arquivo que não é imagem", async () => {
+        await request(app).post("/api/usuarios/register").send(USER);
+
+        const login = await request(app)
+            .post("/api/usuarios/login")
+            .send({ email: USER.email, senha: USER.senha });
+
+        expect(login.status).toBe(200);
+        const token = login.body.access_token;
+
+        const res = await request(app)
+            .post("/api/chamados")
+            .set("Authorization", `Bearer ${token}`)
+            .field("texto", "Arquivo inválido")
+            .field("estado", "a")
+            .attach("imagem", Buffer.from("texto"), {
+                filename: "evidencia.txt",
+                contentType: "text/plain",
+            });
+
+        expect(res.status).toBe(400);
+        expect(res.body.erro).toBe("imagem deve ser JPEG, PNG, GIF ou WebP");
+    });
+
+    test("delete exige admin", async () => {
+        // define o teste: deletar deve exigir admin
         await request(app).post("/api/usuarios/register").send(USER); // registra o usuário comum
         const loginUser = await request(app) // inicia login do usuário comum
             .post("/api/usuarios/login") // rota de login
@@ -56,7 +132,8 @@ describe("Chamados (CRUD)", () => { // agrupa os testes relacionados ao CRUD de 
         // upsert admin fixo (para não depender de Date.now) // comentário original: garante admin estável para o teste
         const senha_hash = await bcrypt.hash(ADMIN.senha, 12); // gera hash da senha do admin (12 = custo do bcrypt)
         // executa um UPSERT no banco para garantir que existe um usuário admin com esse email (sem depender de rotas externas)
-        await pool.query( // roda uma query SQL diretamente no MySQL
+        await pool.query(
+            // roda uma query SQL diretamente no MySQL
             // SQL: insere na tabela `Usuarios` definindo papel=1 (admin)
             `INSERT INTO \`Usuarios\` (\`nome\`, \`email\`, \`senha_hash\`, \`papel\`)
              VALUES (?, ?, ?, 1)

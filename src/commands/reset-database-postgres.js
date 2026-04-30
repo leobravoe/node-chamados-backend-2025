@@ -1,18 +1,29 @@
-import { Client } from 'pg';
-import fs from 'fs/promises';
-import path from 'path';
-import dotenv from 'dotenv';
+import { Client } from "pg";
+import fs from "fs/promises";
+import path from "path";
+import dotenv from "dotenv";
 
 dotenv.config();
 
 const {
-    DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_DATABASE,
-    DB_ADMIN_DATABASE = 'postgres',
+    DB_HOST,
+    DB_PORT,
+    DB_USER,
+    DB_PASSWORD,
+    DB_DATABASE,
+    DB_ADMIN_DATABASE = "postgres",
     DB_ADMIN_PASSWORD,
     DB_DATABASE_FILE_PATH,
 } = process.env;
 
-const requiredEnvVars = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD', 'DB_DATABASE', 'DB_DATABASE_FILE_PATH'];
+const requiredEnvVars = [
+    "DB_HOST",
+    "DB_PORT",
+    "DB_USER",
+    "DB_PASSWORD",
+    "DB_DATABASE",
+    "DB_DATABASE_FILE_PATH",
+];
 
 for (const varName of requiredEnvVars) {
     if (!process.env[varName]) {
@@ -23,7 +34,11 @@ for (const varName of requiredEnvVars) {
 
 const sqlFilePath = path.resolve(process.cwd(), DB_DATABASE_FILE_PATH);
 const baseConfig = { host: DB_HOST, port: Number(DB_PORT), user: DB_USER };
-const adminConfig = { ...baseConfig, database: DB_ADMIN_DATABASE, password: DB_ADMIN_PASSWORD || DB_PASSWORD };
+const adminConfig = {
+    ...baseConfig,
+    database: DB_ADMIN_DATABASE,
+    password: DB_ADMIN_PASSWORD || DB_PASSWORD,
+};
 const appConfig = { ...baseConfig, database: DB_DATABASE, password: DB_PASSWORD };
 
 async function resetDatabase() {
@@ -44,7 +59,7 @@ async function resetDatabase() {
         console.log(`- Banco de dados recriado com sucesso.`);
     } finally {
         await adminClient.end();
-        console.log('- Conexão de admin encerrada.');
+        console.log("- Conexão de admin encerrada.");
     }
 }
 
@@ -52,7 +67,7 @@ async function applySchema() {
     let sql;
     try {
         console.log(`- Lendo SQL do arquivo: ${sqlFilePath}`);
-        sql = await fs.readFile(sqlFilePath, 'utf8');
+        sql = await fs.readFile(sqlFilePath, "utf8");
     } catch (error) {
         console.error(`❌ Erro fatal: Não foi possível ler o arquivo de schema em ${sqlFilePath}.`);
         throw error;
@@ -62,20 +77,20 @@ async function applySchema() {
         await appClient.connect();
         console.log(`- Conectado ao banco "${DB_DATABASE}" para aplicar o schema.`);
         await appClient.query(sql);
-        console.log('- Schema SQL aplicado com sucesso.');
+        console.log("- Schema SQL aplicado com sucesso.");
     } finally {
         await appClient.end();
-        console.log('- Conexão da aplicação encerrada.');
+        console.log("- Conexão da aplicação encerrada.");
     }
 }
 
-console.log('--- Iniciando processo de reset do banco de dados ---');
+console.log("--- Iniciando processo de reset do banco de dados ---");
 try {
     await resetDatabase();
     await applySchema();
-    console.log('✅ Processo de reset finalizado com sucesso!');
+    console.log("✅ Processo de reset finalizado com sucesso!");
 } catch (error) {
-    console.error('❌ ERRO FATAL: Não foi possível resetar o banco de dados.');
+    console.error("❌ ERRO FATAL: Não foi possível resetar o banco de dados.");
     console.error(error);
     process.exit(1);
 }
